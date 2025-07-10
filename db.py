@@ -2,7 +2,7 @@
 import psycopg2
 import os
 import streamlit as st
-from dotenv import load_dotenv
+
 import logging
 import json
 from typing import Dict, List, Optional, Union
@@ -14,7 +14,7 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 logging.basicConfig(level=logging.INFO) 
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+
 
 def get_connection():
     db_host = os.getenv("DB_HOST")
