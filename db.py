@@ -17,13 +17,24 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 def get_connection():
-    return psycopg2.connect(
-        dbname=os.getenv("DB_NAME", "form_generator"),
-        user=os.getenv("DB_USER", "postgres"),
-        password=os.getenv("DB_PASSWORD"),
-        host=os.getenv("DB_HOST", "localhost"),
-        port=os.getenv("DB_PORT", "5432")
-    )
+    try:
+        return psycopg2.connect(
+            dbname=os.getenv("DB_NAME", "form_generator"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD"),
+            host=os.getenv("DB_HOST", "localhost"),
+            port=os.getenv("DB_PORT", "5432"),
+            sslmode='require' 
+            )
+    except psycopg2.OperationalError as e:
+        print("SSL connection failed, trying without SSL. Error:", e)
+        return psycopg2.connect(
+            dbname=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            host=os.getenv("DB_HOST"),
+            port=os.getenv("DB_PORT")
+        )
 
 def initialize_database():
     """Initialize database with required tables"""
