@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 def get_connection():
+    db_host = os.getenv("DB_HOST")
+    db_user = os.getenv("DB_USER")
+    print(f"DEBUG: Attempting to connect to host: '{db_host}' with user: '{db_user}'")
     try:
         return psycopg2.connect(
             dbname=os.getenv("DB_NAME", "form_generator"),
