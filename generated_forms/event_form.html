@@ -1,0 +1,52 @@
+
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            
+    <style>
+    /* Fix for navigation arrows */
+    .nav-arrow {
+        display: inline-block;
+        margin: 0 5px;
+    }
+    .nav-arrow::after {
+        content: ">";
+        font-family: inherit;
+    }
+    </style>
+    ```
+<form class="needs-validation" novalidate>
+    <div class="mb-3">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="event">Event</label>
+        <select id="event" name="event" required>
+            <option value="">Select an event</option>
+            <option value="Concert">Concert</option>
+            <option value="Festival">Festival</option>
+            <option value="Seminar">Seminar</option>
+        </select>
+    </div>
+    
+    <div class="mb-3">
+        <label for="phone">Phone</label>
+        <input type="tel" id="phone" name="phone" required pattern="[0-9]{10,15}" title="10-15 digit phone number">
+    </div>
+    
+    <div class="mb-3">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" required></textarea>
+    </div>
+    
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
+```
+This HTML form includes all the fields you requested, styled with Bootstrap 5 and using the appropriate input types based on data types. The `required` attribute is added to all fields to ensure they are required. A submit button with class `btn btn-primary` is also included for submitting the form. Additionally, a CSS fix is included for navigation arrows to display them correctly.

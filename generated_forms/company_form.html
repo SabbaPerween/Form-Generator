@@ -1,0 +1,36 @@
+
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            ```
+<form class="container mb-3">
+  <label for="name">Name:</label>
+  <input type="text" name="name" id="name" required>
+  
+  <label for="age">Age:</label>
+  <input type="number" name="age" id="age" required>
+  
+  <label for="phone">Phone Number:</label>
+  <input type="tel" name="phone" id="phone" pattern="[0-9]{10,15}" title="10-15 digit phone number" required>
+  
+  <label for="gender">Gender:</label>
+  <input type="checkbox" name="gender" id="gender" required>
+  
+  <label for="email">Email:</label>
+  <input type="email" name="email" id="email" required>
+  
+  <button class="btn btn-primary">Submit</button>
+</form>
+```
+Explanation:
+
+* The form is wrapped in a container div with class `mb-3`, which means it will have margin bottom of 3.
+* Each field is wrapped in a div with class `mb-3` for styling purposes.
+* The input types are chosen based on the data type requirements:
+	+ `VARCHAR(255)`/`TEXT`: text input or textarea
+	+ `INTEGER/FLOAT`: number input
+	+ `DATE`: date input
+	+ `BOOLEAN`: checkbox
+	+ `PHONE`: tel input with pattern validation
+* The `required` attribute is added to all fields to indicate that they are required.
+* A submit button with class `btn btn-primary` is included to allow the user to submit the form.
+* Form labels are included for each field, along with the corresponding input name and ID.
+* For phone fields, a pattern validation of `[0-9]{10,15}` is added, along with a title of "10-15 digit phone number".

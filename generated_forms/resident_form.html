@@ -1,0 +1,38 @@
+
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            ```
+<form class="container mb-3">
+  <div class="form-group">
+    <label for="name">Name:</label>
+    <input type="text" name="name" id="name" required>
+  </div>
+  <div class="form-group">
+    <label for="email">Email:</label>
+    <input type="email" name="email" id="email" required>
+  </div>
+  <div class="form-group">
+    <label for="dob">Date of Birth:</label>
+    <input type="date" name="dob" id="dob" required>
+  </div>
+  <div class="form-group">
+    <label for="gender">Gender:</label>
+    <input type="boolean" name="gender" id="gender" required>
+  </div>
+  <div class="form-group">
+    <label for="phone">Phone Number:</label>
+    <input type="tel" pattern="[0-9]{10,15}" title="10-15 digit phone number" name="phone" id="phone" required>
+  </div>
+  <button class="btn btn-primary">Submit</button>
+</form>
+```
+Explanation:
+
+* The form is wrapped in a container div with class `container` and the mb-3 class is used to add margin to each field.
+* Each field is wrapped in a div with class `form-group`.
+* Labels are added for each field using the `label` element, and the label text is set using the `for` attribute.
+* Input fields are added inside the form group div, and their names and IDs are set using the `name` and `id` attributes.
+* The `required` attribute is added to all input fields to indicate that they are required.
+* A submit button is added at the bottom of the form with class `btn btn-primary`.
+* For the phone field, a pattern validation is added using the `pattern` attribute and the title is set using the `title` attribute.
+
+Note: The above code is just an example and you can customize it as per your requirement. Also, make sure to include the necessary CSS styles to make the form look good.

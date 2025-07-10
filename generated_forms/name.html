@@ -1,0 +1,47 @@
+
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            ```
+<form class="needs-validation" novalidate>
+  <div class="mb-3">
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" required>
+  </div>
+  
+  <div class="mb-3">
+    <label for="ch">CHECKBOX</label>
+    <input type="checkbox" id="ch" name="ch" required>
+  </div>
+  
+  <div class="mb-3">
+    <label for="integer">Integer</label>
+    <input type="number" id="integer" name="integer" required>
+  </div>
+  
+  <div class="mb-3">
+    <label for="float">Float</label>
+    <input type="number" id="float" name="float" required>
+  </div>
+  
+  <div class="mb-3">
+    <label for="date">Date</label>
+    <input type="date" id="date" name="date" required>
+  </div>
+  
+  <div class="mb-3">
+    <label for="phone">Phone</label>
+    <input type="tel" id="phone" name="phone" pattern="[0-9]{10,15}" title="10-15 digit phone number" required>
+  </div>
+  
+  <button class="btn btn-primary" type="submit">Submit</button>
+</form>
+```
+Explanation:
+
+* The form is wrapped in a `form` element and has a `class` attribute set to `needs-validation`. This tells Bootstrap that the form requires validation.
+* Inside the form, there are several `div` elements with a class of `mb-3`. These dividers help to break up the form into smaller, more manageable sections.
+* Each section contains a label element and an input/textarea element. The label element provides a text description of the field, while the input/textarea element is used to collect user input.
+* The input/textarea types are determined by the data type of the field. For example, the `name` field is a `VARCHAR(255)` and so uses a `text` input. The `ch` field is a `BOOLEAN` and so uses a `checkbox`.
+* All fields have a `required` attribute set to ensure that the user must provide a value before submitting the form.
+* A submit button is included at the bottom of the form, with a class of `btn btn-primary`. This button can be used to submit the form when the user has completed all required fields.
+* Form labels are included for each field, using the `label` element. These labels provide a text description of the field and help the user understand what information is being requested.
+* The input names and IDs are set to match the field names, which helps to ensure that the form data is correctly submitted to the server.

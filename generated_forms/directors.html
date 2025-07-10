@@ -1,0 +1,54 @@
+
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            
+    <style>
+    /* Fix for navigation arrows */
+    .nav-arrow {
+        display: inline-block;
+        margin: 0 5px;
+    }
+    .nav-arrow::after {
+        content: ">";
+        font-family: inherit;
+    }
+    </style>
+    ```
+<form class="directors" method="post">
+    <div class="mb-3">
+        <label for="phone">Phone</label>
+        <tel-input id="phone" name="phone" pattern="[0-9]{10,15}" title="10-15 digit phone number"></tel-input>
+    </div>
+    <div class="mb-3">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label for="age">Age</label>
+        <input type="number" id="age" name="age" required>
+    </div>
+    <div class="mb-3">
+        <label for="gender">Gender</label>
+        <input type="boolean" id="gender" name="gender" required>
+    </div>
+    <div class="mb-3">
+        <button class="btn btn-primary">Submit</button>
+    </div>
+</form>
+```
+Explanation:
+
+1. We're using Bootstrap 5 for styling the form.
+2. We're wrapping each field in a div with class `mb-3` to add margin and make the form look better.
+3. We're using appropriate input types based on data types:
+	* `tel-input` for phone fields with pattern validation
+	* `text` or `textarea` for text fields
+	* `number` or `float` for number fields
+	* `date` for date fields
+	* `checkbox` for boolean fields
+4. We're adding the `required` attribute to all fields to make them required.
+5. We're including a submit button with class `btn btn-primary` to submit the form.
+6. We're adding form labels with field names using the `label` element.
+7. We're using field names for input names and IDs.
+8. For phone fields, we're adding the `pattern` attribute with a valid phone number pattern and a title to explain what the pattern is.
+9. For navigation elements, we're using the `::after` pseudo-element to add a arrow icon instead of using Material Icons.
+10. We're including a CSS fix for the navigation arrows to make them look better.

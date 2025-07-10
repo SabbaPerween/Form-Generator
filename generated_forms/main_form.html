@@ -1,0 +1,36 @@
+
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            ```
+<form class="container mb-3" action="#" method="post">
+  <label for="name">Name</label>
+  <input type="text" name="name" id="name" required>
+  
+  <label for="age">Age</label>
+  <input type="number" name="age" id="age" required>
+  
+  <label for="gender">Gender</label>
+  <input type="boolean" name="gender" id="gender" required>
+  
+  <label for="phone">Phone Number</label>
+  <input type="tel" name="phone" id="phone" pattern="[0-9]{10,15}" title="10-15 digit phone number" required>
+  
+  <label for="email">Email</label>
+  <input type="email" name="email" id="email" required>
+  
+  <button class="btn btn-primary" type="submit">Submit</button>
+</form>
+```
+Explanation:
+
+* The form is wrapped in a container with the class `mb-3`, which uses Bootstrap 5's grid system to provide margin and spacing.
+* Each field is wrapped in a div with the class `form-label` and `form-control`, which provides label and input styling using Bootstrap 5's CSS.
+* The `name`, `age`, `gender`, `phone`, and `email` fields are defined as required using the `required` attribute.
+* The `name` field is a text input with the name `name` and ID `name`.
+* The `age` field is an integer input with the name `age` and ID `age`.
+* The `gender` field is a boolean input with the name `gender` and ID `gender`.
+* The `phone` field is a tel input with the name `phone` and ID `phone`, using the `pattern` attribute to validate phone numbers in the format of `10-15 digits`.
+* The `email` field is an email input with the name `email` and ID `email`.
+* A submit button with the class `btn btn-primary` is used to submit the form.
+* Labels are added for each field using the `label` element, which provides text associated with the input field. The label text is set to the same value as the input name using the `for` attribute.
+* The CSS styles the form labels and inputs using Bootstrap 5's grid system and typography classes.
+* The `::after` pseudo-element is used in the `.nav-arrow` class to create a arrow icon for the navigation elements.

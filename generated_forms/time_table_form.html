@@ -1,0 +1,67 @@
+
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            ```
+
+Here is an example of how you could create an HTML form for a time table with the specified requirements using Bootstrap 5 and CSS:
+```
+<form class="needs-validation" novalidate>
+  <div class="mb-3">
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" class="form-control" required>
+  </div>
+  
+  <div class="mb-3">
+    <label for="address">Address</label>
+    <textarea id="address" name="address" class="form-control" required></textarea>
+  </div>
+  
+  <div class="mb-3">
+    <label for="integer">Age</label>
+    <input type="number" id="age" name="age" class="form-control" required>
+  </div>
+  
+  <div class="mb-3">
+    <label for="date">Birthday</label>
+    <input type="date" id="birthday" name="birthday" class="form-control" required>
+  </div>
+  
+  <div class="mb-3">
+    <label for="boolean">Are you male?</label>
+    <input type="checkbox" id="male" name="male" class="form-control" required>
+  </div>
+  
+  <div class="mb-3">
+    <label for="phone">Phone number</label>
+    <input type="tel" id="phone" name="phone" pattern="[0-9]{10,15}" title="10-15 digit phone number" class="form-control" required>
+  </div>
+  
+  <div class="mb-3">
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </div>
+</form>
+```
+In this example, I used the `needs-validation` and `novalidate` attributes to indicate that the form should validate its inputs and not trigger a validation warning when the form is submitted. I also added a `required` attribute to all fields to ensure they are marked as required in the form.
+
+For the input types, I used the appropriate input types based on the data types:
+
+* `VARCHAR(255)`/ `TEXT`: text input or textarea
+* `INTEGER/FLOAT`: number input
+* `DATE`: date input
+* `BOOLEAN`: checkbox
+* `PHONE`: tel input with pattern validation
+
+For the navigation elements, I used the `::after` pseudo-element to create a arrow icon instead of using Material Icons.
+
+Finally, I added this CSS to fix an issue with the navigation arrows:
+```
+.nav-arrow {
+  display: inline-block;
+  margin: 0 5px;
+}
+
+.nav-arrow::after {
+  content: ">";
+  font-family: inherit;
+}
+```
+This will create a horizontal arrow icon for the navigation elements.

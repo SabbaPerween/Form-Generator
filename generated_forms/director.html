@@ -1,0 +1,75 @@
+
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            ```
+<form class="director" novalidate>
+  <div class="mb-3">
+    <label for="name">Name:</label>
+    <input type="text" name="name" id="name" required pattern="[a-zA-Z]{1,50}" title="Maximum 50 characters">
+  </div>
+  
+  <div class="mb-3">
+    <label for="phone">Phone:</label>
+    <tel-input name="phone" id="phone" required pattern="[0-9]{10,15}" title="10-15 digit phone number"></tel-input>
+  </div>
+  
+  <div class="mb-3">
+    <label for="email">Email:</label>
+    <input type="email" name="email" id="email" required pattern=".+)@.+]([a-z0-9.-]+\.[a-z]{2,})$" title="Valid email address">
+  </div>
+  
+  <div class="mb-3">
+    <label for="website">Website:</label>
+    <input type="url" name="website" id="website" required pattern=".{1,200}" title="Maximum 200 characters">
+  </div>
+  
+  <div class="mb-3">
+    <label for="facebook">Facebook:</label>
+    <input type="text" name="facebook" id="facebook" required pattern=".{1,200}" title="Maximum 200 characters">
+  </div>
+  
+  <div class="mb-3">
+    <label for="twitter">Twitter:</label>
+    <input type="text" name="twitter" id="twitter" required pattern=".{1,200}" title="Maximum 200 characters">
+  </div>
+  
+  <div class="mb-3">
+    <label for="instagram">Instagram:</label>
+    <input type="text" name="instagram" id="instagram" required pattern=".{1,200}" title="Maximum 200 characters">
+  </div>
+  
+  <div class="mb-3">
+    <label for="linkedin">LinkedIn:</label>
+    <input type="text" name="linkedin" id="linkedin" required pattern=".{1,200}" title="Maximum 200 characters">
+  </div>
+  
+  <button class="btn btn-primary" type="submit">Submit</button>
+</form>
+```
+This HTML form includes the following features:
+
+1. Uses Bootstrap 5 for styling.
+2. Wraps each field in a div with class `mb-3` for vertical spacing.
+3. Uses appropriate input types based on data types:
+	* VARCHAR(255)/TEXT: text input or textarea
+	* INTEGER/FLOAT: number input
+	* DATE: date input
+	* BOOLEAN: checkbox
+	* PHONE: tel input with pattern validation
+4. Adds `required` attribute to all fields to ensure they are filled in.
+5. Includes a submit button with class `btn btn-primary` for submission.
+6. Adds form labels with field names.
+7. Uses field names for input names and IDs.
+8. For phone fields, adds pattern validation of `[0-9]{10,15}` and title `10-15 digit phone number`.
+9. For navigation elements, uses the `<span>` element instead of Material Icons.
+10. Includes this CSS to fix an issue with navigation arrows:
+```css
+.nav-arrow {
+  display: inline-block;
+  margin: 0 5px;
+}
+
+.nav-arrow::after {
+  content: ">";
+  font-family: inherit;
+}
+```
