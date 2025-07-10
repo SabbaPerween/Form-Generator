@@ -1,5 +1,5 @@
 # form_utils.py
-import ollama
+
 import json
 import os
 import logging
@@ -113,52 +113,52 @@ def generate_html_form(form_name: str, fields: list) -> str:
 </html>
     """
     return html
-def generate_form_with_llama(form_name, fields):
-    confirmation_message = f"Request received: Enhancing form '{form_name}' with AI (LLM)..."
-    print(confirmation_message) # For immediate console feedback
-    logger.info(confirmation_message) # For structured logging
-    try:
-        nav_css = get_navigation_css()
-        # Create field specifications string
-        field_specs = "\n".join(
-            [f"- {field['name']} ({field['type']})" for field in fields]
-        )
+# def generate_form_with_llama(form_name, fields):
+#     confirmation_message = f"Request received: Enhancing form '{form_name}' with AI (LLM)..."
+#     print(confirmation_message) # For immediate console feedback
+#     logger.info(confirmation_message) # For structured logging
+#     try:
+#         nav_css = get_navigation_css()
+#         # Create field specifications string
+#         field_specs = "\n".join(
+#             [f"- {field['name']} ({field['type']})" for field in fields]
+#         )
         
-        prompt = f"""
-        Create an HTML form for '{form_name}' with the following fields:
-        {field_specs}
+#         prompt = f"""
+#         Create an HTML form for '{form_name}' with the following fields:
+#         {field_specs}
         
-        Requirements:
-        1. Use Bootstrap 5 for styling
-        2. Wrap each field in a div with class 'mb-3'
-        3. Use appropriate input types based on data types:
-            - VARCHAR(255)/TEXT: text input or textarea
-            - INTEGER/FLOAT: number input
-            - DATE: date input
-            - BOOLEAN: checkbox
-            - PHONE: tel input with pattern validation
-        4. Add 'required' attribute to all fields
-        5. Include a submit button with class 'btn btn-primary'
-        6. Add form labels with field names
-        7. Use field names for input names and IDs
-        8. For phone fields, add pattern="[0-9]{{10,15}}" and title="10-15 digit phone number"
-        9. For navigation elements, use:
-            <span class="nav-arrow"></span> 
-            instead of Material Icons
-        10. Include this CSS:
-        {nav_css}
-        """
+#         Requirements:
+#         1. Use Bootstrap 5 for styling
+#         2. Wrap each field in a div with class 'mb-3'
+#         3. Use appropriate input types based on data types:
+#             - VARCHAR(255)/TEXT: text input or textarea
+#             - INTEGER/FLOAT: number input
+#             - DATE: date input
+#             - BOOLEAN: checkbox
+#             - PHONE: tel input with pattern validation
+#         4. Add 'required' attribute to all fields
+#         5. Include a submit button with class 'btn btn-primary'
+#         6. Add form labels with field names
+#         7. Use field names for input names and IDs
+#         8. For phone fields, add pattern="[0-9]{{10,15}}" and title="10-15 digit phone number"
+#         9. For navigation elements, use:
+#             <span class="nav-arrow"></span> 
+#             instead of Material Icons
+#         10. Include this CSS:
+#         {nav_css}
+#         """
         
-        response = ollama.generate(
-            model='llama2',
-            prompt=prompt,
-            options={'temperature': 0.2}
-        )
+#         response = ollama.generate(
+#             model='llama2',
+#             prompt=prompt,
+#             options={'temperature': 0.2}
+#         )
         
-        return response['response']
-    except Exception as e:
-        logger.error(f"Error generating form: {str(e)}")
-        return generate_html_form(form_name, fields)
+#         return response['response']
+#     except Exception as e:
+#         logger.error(f"Error generating form: {str(e)}")
+#         return generate_html_form(form_name, fields)
 
 def generate_fallback_form(fields):
     """Generate a simple form as fallback when LLAMA fails"""
@@ -193,7 +193,7 @@ def generate_fallback_form(fields):
     form_html += '  <button type="submit" class="btn btn-primary">Submit</button>\n'
     form_html += '</form>'
     return form_html
-# Corrected function in form_utils.py
+
 
 def generate_embed_code(form_name: str, token: str, base_url: str) -> str:
     """Generate HTML embed code for a form"""
