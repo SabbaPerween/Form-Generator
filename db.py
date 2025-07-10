@@ -17,27 +17,24 @@ logger = logging.getLogger(__name__)
 
 
 def get_connection():
-    db_host = os.getenv("DB_HOST")
-    db_user = os.getenv("DB_USER")
-    print(f"DEBUG: Attempting to connect to host: '{db_host}' with user: '{db_user}'")
-    """Establishes a connection to the database using st.secrets."""
+    """Establishes a connection to the database using Streamlit secrets."""
     try:
         return psycopg2.connect(
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT"),
-            sslmode='require' 
-            )
+            dbname=st.secrets["DB_NAME"],
+            user=st.secrets["DB_USER"],
+            password=st.secrets["DB_PASSWORD"],
+            host=st.secrets["DB_HOST"],
+            port=st.secrets["DB_PORT"],
+            sslmode='require'
+        )
     except psycopg2.OperationalError as e:
         print("SSL connection failed, trying without SSL. Error:", e)
         return psycopg2.connect(
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT")
+            dbname=st.secrets["DB_NAME"],
+            user=st.secrets["DB_USER"],
+            password=st.secrets["DB_PASSWORD"],
+            host=st.secrets["DB_HOST"],
+            port=st.secrets["DB_PORT"]
         )
 
 def initialize_database():

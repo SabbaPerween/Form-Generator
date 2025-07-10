@@ -17,10 +17,10 @@ import hashlib
 # Initialize session state
 if 'user' not in st.session_state:
     st.session_state.user = None
-
-initialize_default_users()
 # Initialize database
 initialize_database()
+initialize_default_users()
+
 # query_params = st.experimental_get_query_params()
 
 if 'token' in st.query_params:
