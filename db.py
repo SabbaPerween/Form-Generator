@@ -20,13 +20,14 @@ def get_connection():
     db_host = os.getenv("DB_HOST")
     db_user = os.getenv("DB_USER")
     print(f"DEBUG: Attempting to connect to host: '{db_host}' with user: '{db_user}'")
+    """Establishes a connection to the database using st.secrets."""
     try:
         return psycopg2.connect(
-            dbname=os.getenv("DB_NAME", "form_generator"),
-            user=os.getenv("DB_USER", "postgres"),
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST", "localhost"),
-            port=os.getenv("DB_PORT", "5432"),
+            dbname=os.getenv["DB_NAME"],
+            user=os.getenv["DB_USER"],
+            password=os.getenv["DB_PASSWORD"],
+            host=os.getenv["DB_HOST"],
+            port=os.getenv["DB_PORT"],
             sslmode='require' 
             )
     except psycopg2.OperationalError as e:
