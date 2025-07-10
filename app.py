@@ -13,12 +13,17 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 from typing import List, Dict
 import hashlib
 
-
+# Initialize database only if connection test passes
+if test_connection():
+    initialize_database()
+else:
+    st.error("Database connection failed. Please check your configuration.")
+    st.stop()
 # Initialize session state
+initialize_default_users()
 if 'user' not in st.session_state:
     st.session_state.user = None
-# Initialize database
-initialize_database()
+
 initialize_default_users()
 
 # query_params = st.experimental_get_query_params()

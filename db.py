@@ -17,26 +17,34 @@ logger = logging.getLogger(__name__)
 
 
 def get_connection():
-    """Establishes a connection to the database using Streamlit secrets."""
     try:
         return psycopg2.connect(
-            dbname=st.secrets["DB_NAME"],
-            user=st.secrets["DB_USER"],
-            password=st.secrets["DB_PASSWORD"],
-            host=st.secrets["DB_HOST"],
-            port=st.secrets["DB_PORT"],
+            dbname=st.secrets.postgres.dbname,
+            user=st.secrets.postgres.user,
+            password=st.secrets.postgres.password,
+            host=st.secrets.postgres.host,
+            port=st.secrets.postgres.port,
             sslmode='require'
         )
     except psycopg2.OperationalError as e:
         print("SSL connection failed, trying without SSL. Error:", e)
         return psycopg2.connect(
-            dbname=st.secrets["DB_NAME"],
-            user=st.secrets["DB_USER"],
-            password=st.secrets["DB_PASSWORD"],
-            host=st.secrets["DB_HOST"],
-            port=st.secrets["DB_PORT"]
+            dbname=st.secrets.postgres.dbname,
+            user=st.secrets.postgres.user,
+            password=st.secrets.postgres.password,
+            host=st.secrets.postgres.host,
+            port=st.secrets.postgres.port
         )
-
+def test_connection():
+    try:
+        conn = get_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+            result = cur.fetchone()
+        return result[0] == 1
+    except Exception as e:
+        st.error(f"Connection test failed: {str(e)}")
+        return False
 def initialize_database():
     """Initialize database with required tables"""
     commands = [
