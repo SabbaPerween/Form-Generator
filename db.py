@@ -14,27 +14,19 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 logging.basicConfig(level=logging.INFO) 
 logger = logging.getLogger(__name__)
 
-
-
 def get_connection():
     try:
         return psycopg2.connect(
-            dbname=st.secrets.postgres.dbname,
-            user=st.secrets.postgres.user,
-            password=st.secrets.postgres.password,
-            host=st.secrets.postgres.host,
-            port=st.secrets.postgres.port,
+            host=st.secrets["postgres"]["host"],
+            port=st.secrets["postgres"]["port"],
+            dbname=st.secrets["postgres"]["dbname"],
+            user=st.secrets["postgres"]["user"],
+            password=st.secrets["postgres"]["password"],
             sslmode='require'
         )
-    except psycopg2.OperationalError as e:
-        print("SSL connection failed, trying without SSL. Error:", e)
-        return psycopg2.connect(
-            dbname=st.secrets.postgres.dbname,
-            user=st.secrets.postgres.user,
-            password=st.secrets.postgres.password,
-            host=st.secrets.postgres.host,
-            port=st.secrets.postgres.port
-        )
+    except Exception as e:
+        st.error(f"Database connection failed: {str(e)}")
+        st.stop()
 def test_connection():
     try:
         conn = get_connection()
