@@ -96,21 +96,22 @@ This is a critical best practice in Python development.
 python3 -m venv venv
 source venv/bin/activate
 ```
-. python3 -m venv venv: This command tells Python to run its built-in venv module. It creates a new, isolated "virtual environment" in a folder named venv.
+* python3 -m venv venv: This command tells Python to run its built-in venv module. It creates a new, isolated "virtual environment" in a folder named venv.
 Why? This prevents package conflicts. The libraries needed for your project (like Streamlit, Pandas, etc.) will be installed inside this venv folder and won't interfere with other Python projects on the user's computer.
-. source venv/bin/activate: This command "activates" the virtual environment. It tells the terminal that for this session, any Python-related commands (like python and pip) should use the versions inside the venv folder, not the system-wide ones.
+
+* source venv/bin/activate: This command "activates" the virtual environment. It tells the terminal that for this session, any Python-related commands (like python and pip) should use the versions inside the venv folder, not the system-wide ones.
 ```bash
 # For Windows
 python -m venv venv
 .\venv\Scripts\activate
 ```
-. The logic is the same, but the path to the activation script uses backslashes (\) instead of forward slashes (/).
+* The logic is the same, but the path to the activation script uses backslashes (\) instead of forward slashes (/).
 ### 3. Installing Dependencies
 ```bash
 pip install -r requirements.txt
 ```
-. pip: This is Python's package installer.
-. install -r requirements.txt: This command tells pip to read the requirements.txt file. It will then go through every library listed in that file (e.g., streamlit, pandas, psycopg2-binary) and download and install the correct versions into the currently active virtual environment.
+* pip: This is Python's package installer.
+* install -r requirements.txt: This command tells pip to read the requirements.txt file. It will then go through every library listed in that file (e.g., streamlit, pandas, psycopg2-binary) and download and install the correct versions into the currently active virtual environment.
 ### 4. Configure Environment Variables
 Create a file named .env in the root of your project and add the following, replacing the placeholder values with your actual credentials.
 ```bash
@@ -137,7 +138,7 @@ BASE_URL=http://localhost:8501
 ``` bash
 streamlit run app.py
 ```
-. This is the final command. It uses the streamlit library (which was just installed) to start a local web server and run your app.py script. It will then print a URL (like http://localhost:8501) that the user can open in their web browser to see and interact with your application.
+* This is the final command. It uses the streamlit library (which was just installed) to start a local web server and run your app.py script. It will then print a URL (like http://localhost:8501) that the user can open in their web browser to see and interact with your application.
 
 # Usage
 1. Navigate to http://localhost:8501 in your web browser.
@@ -149,10 +150,10 @@ Viewer: viewer / viewer123
 
 # Future Work
 This platform provides a solid foundation. Future enhancements could include:
-. REST API: Expose an API for programmatic . form submission and data retrieval.
-. OAuth Integration: Allow users to log in with Google, GitHub, etc.
-. Advanced Reporting: Create a dedicated report builder with scheduled email delivery.
-. Webhooks: Trigger actions in other systems upon form submission.
-. Containerization: Provide Dockerfile and docker-compose.yml for easy deployment.
+* REST API: Expose an API for programmatic . form submission and data retrieval.
+* OAuth Integration: Allow users to log in with Google, GitHub, etc.
+* Advanced Reporting: Create a dedicated report builder with scheduled email delivery.
+* Webhooks: Trigger actions in other systems upon form submission.
+* Containerization: Provide Dockerfile and docker-compose.yml for easy deployment.
 # License
 This project is licensed under the MIT License. See the LICENSE file for details.
