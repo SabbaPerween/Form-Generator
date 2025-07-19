@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 def get_connection():
+    
     return psycopg2.connect(
         dbname=os.getenv("DB_NAME", "form_generator"),
         user=os.getenv("DB_USER", "postgres"),
@@ -1993,3 +1994,68 @@ def get_share_token(form_name: str) -> Optional[str]:
             )
             result = cur.fetchone()
             return result[0] if result else None
+        
+# Add this new function to db.py
+
+def create_form_and_table(form_name: str, fields: List[Dict], user_id: Optional[int]) -> tuple[bool, str]:
+    """
+    Atomically creates the form metadata and its corresponding data table in a single transaction.
+    Also handles setting initial permissions for the creator.
+    Returns a tuple: (success_boolean, message_string)
+    """
+    table_name = form_name.replace(" ", "_").lower()
+    fields_json = json.dumps(fields)
+    
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                # STEP 1: Insert metadata and get the new form's ID
+                cur.execute(
+                    "INSERT INTO forms (form_name, fields, created_by) VALUES (%s, %s, %s) RETURNING id",
+                    (form_name, fields_json, user_id)
+                )
+                form_id = cur.fetchone()[0]
+
+                # STEP 2: Create the dynamic data table
+                columns = [
+                    "id SERIAL PRIMARY KEY",
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                ]
+                for field in fields:
+                    field_name = field["name"].replace(" ", "_").lower()
+                    sql_type = get_sql_type(field["type"])
+                    columns.append(f'"{field_name}" {sql_type}')
+                
+                create_table_sql = f'CREATE TABLE "{table_name}" ({", ".join(columns)})'
+                cur.execute(create_table_sql)
+
+                # STEP 3: Set initial permissions for the creator if a user_id was provided
+                if user_id and form_id:
+                    cur.execute(
+                        """
+                        INSERT INTO form_permissions (form_id, user_id, can_view, can_edit, can_delete)
+                        VALUES (%s, %s, TRUE, TRUE, TRUE)
+                        ON CONFLICT (form_id, user_id) DO NOTHING
+                        """,
+                        (form_id, user_id)
+                    )
+
+            # If all steps inside the cursor block succeed, the 'with conn' block will commit.
+            logger.info(f"Successfully created form '{form_name}' and its table in a single transaction.")
+            return (True, "Form created successfully!")
+
+    except psycopg2.errors.UniqueViolation:
+        # This specifically catches if the form_name is already taken.
+        msg = f"A form with the name '{form_name}' already exists."
+        logger.warning(msg)
+        return (False, msg)
+    except psycopg2.errors.DuplicateTable:
+        # This might happen in a race condition or if cleanup failed before.
+        msg = f"A data table named '{table_name}' already exists in the database."
+        logger.warning(msg)
+        return (False, msg)
+    except Exception as e:
+        # Catch any other unexpected errors during the transaction.
+        msg = f"An unexpected database error occurred: {e}"
+        logger.error(msg, exc_info=True)
+        return (False, msg)
