@@ -88,7 +88,7 @@ Follow these instructions to set up and run the project locally.
 ### Prerequisites
 *   Python 3.9+
 *   PostgreSQL (v12 or higher)
-*   Ollama installed and serving a model (e.g., `ollama run llama2`)
+*   Ollama installed and serving a model (e.g., `ollama run llama2`)----(it's optional if you want to use AI than you have to do it otherwise leave it)
 
 ### 1. Clone the Repository
 ```bash
