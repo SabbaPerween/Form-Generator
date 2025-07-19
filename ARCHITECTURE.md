@@ -1,5 +1,5 @@
 
-### System Architecture
+# System Architecture
 
 This document provides a deep dive into the technical architecture of the Dynamic Form Generator platform. It is intended for developers, architects, and anyone who needs to understand how the system works internally.
 
