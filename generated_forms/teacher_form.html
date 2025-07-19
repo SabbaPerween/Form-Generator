@@ -1,62 +1,36 @@
 
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            ```
-<form class="needs-validation" novalidate>
-  <div class="mb-3">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" required pattern="[a-zA-Z ]+" title="Enter your name">
-  </div>
-  
-  <div class="mb-3">
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Enter a valid email address">
-  </div>
-  
-  <div class="mb-3">
-    <label for="subject">Subject:</label>
-    <textarea id="subject" name="subject" required pattern="[a-zA-Z ]+" title="Enter a subject for your message"></textarea>
-  </div>
-  
-  <div class="mb-3">
-    <label for="integer">Integer:</label>
-    <input type="number" id="integer" name="integer" required pattern="[0-9]+" title="Enter an integer value">
-  </div>
-  
-  <div class="mb-3">
-    <label for="float">Float:</label>
-    <input type="number" id="float" name="float" required pattern="[0-9.]+)" title="Enter a floating point number value">
-  </div>
-  
-  <div class="mb-3">
-    <label for="date">Date:</label>
-    <input type="date" id="date" name="date" required pattern="[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}" title="Enter a date in the format mm/dd/yyyy">
-  </div>
-  
-  <div class="mb-3">
-    <label for="boolean">Boolean:</label>
-    <input type="checkbox" id="boolean" name="boolean" required pattern="[0|1]" title="Enter a boolean value (true or false)">
-  </div>
-  
-  <div class="mb-3">
-    <label for="phone">Phone:</label>
-    <input type="tel" id="phone" name="phone" required pattern="[0-9]{3,15}" title="Enter a 10-15 digit phone number">
-  </div>
-  
-  <button class="btn btn-primary" type="submit">Submit</button>
-</form>
-```
-Explanation:
+    <style>
+    /* Fix for navigation arrows */
+    .nav-arrow {
+        display: inline-block;
+        margin: 0 5px;
+    }
+    .nav-arrow::after {
+        content: ">";
+        font-family: inherit;
+    }
+    </style>
+    
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Teacher Form</h2>
+        <form action="#" method="POST">
+            <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
 
-* The form is wrapped in a `form` element with the class `needs-validation` to indicate that the form requires validation.
-* Each field is wrapped in a `div` element with the class `mb-3` for spacing and accessibility purposes.
-* The label for each field is included inside the corresponding `div` element using the `label` element.
-* Input types are used based on the data type of the field:
-	+ VARCHAR/TEXT: text input or textarea
-	+ INTEGER/FLOAT: number input
-	+ DATE: date input
-	+ BOOLEAN: checkbox
-	+ PHONE: tel input with pattern validation
-* The `required` attribute is added to all fields to indicate that they are required.
-* A submit button with the class `btn btn-primary` is included at the bottom of the form for submitting the form.
-* Field names are used for both input names and IDs to ensure proper form submission and validation.
-* For phone fields, a pattern validation is added using the `[0-9]{10,15}` pattern to ensure that the user enters a 10-15 digit phone number. The `title` attribute is also added to provide additional information to the user.
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</body>
+</html>
+    

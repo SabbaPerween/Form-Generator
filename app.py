@@ -12,25 +12,87 @@ import datetime
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from typing import List, Dict
 import hashlib
+import random
+from email_utils import send_otp_email
+# Initialize database
+initialize_database()
 
-# Initialize database only if connection test passes
-if test_connection():
-    initialize_database()
-else:
-    st.error("Database connection failed. Please check your configuration.")
-    st.stop()
-# Initialize session state
-initialize_default_users()
+# # Initialize session state
 if 'user' not in st.session_state:
     st.session_state.user = None
+token = st.query_params.get("token")
 
-initialize_default_users()
+if token:
+    st.set_page_config(layout="centered")
+    
+    st.title("Form Submission")
+    st.markdown("---")
+    
+    form_meta = get_form_by_token(token)
+    if not form_meta:
+        st.error("This form link is invalid or has expired.")
+        st.stop()
+    
+    form_name = form_meta["form_name"]
+    fields = form_meta["fields"]
+    
+    st.subheader(f"You are filling out: {form_name}")
+    
+    with st.form(key=f"shared_form_{token}"):
+        form_data = {}
+        # This renderer can be expanded by copying logic from the internal "Form Filling" page if needed.
+        for field in fields:
+            field_name = field["name"]
+            field_type = field.get("type", "TEXT")
+            options = field.get("options", [])
+            
+            if field_type == "TEXTAREA":
+                form_data[field_name] = st.text_area(field_name)
+            elif field_type == "INTEGER":
+                form_data[field_name] = st.number_input(field_name, step=1)
+            elif field_type == "FLOAT":
+                form_data[field_name] = st.number_input(field_name, format="%.2f")
+            elif field_type == "DATE":
+                form_data[field_name] = st.date_input(field_name)
+            elif field_type == "DATETIME":
+                form_data[field_name] = st.datetime_input(field_name) # Corrected to datetime_input
+            elif field_type == "BOOLEAN":
+                form_data[field_name] = st.checkbox(field_name)
+            elif field_type == "SELECT":
+                form_data[field_name] = st.selectbox(field_name, options)
+            elif field_type == "RADIO":
+                form_data[field_name] = st.radio(field_name, options)
+            elif field_type == "MULTISELECT":
+                form_data[field_name] = st.multiselect(field_name, options)
+            else:
+                form_data[field_name] = st.text_input(field_name)
 
+        submitted = st.form_submit_button("Submit", use_container_width=True)
+        
+        if submitted:
+            # Clean and save the data
+            clean_data = {k.replace(" ", "_").lower(): v for k, v in form_data.items()}
+            if save_form_data(form_name, clean_data):
+                st.success("Thank you! Your submission has been recorded.")
+                st.balloons()
+            else:
+                st.error("There was an error saving your submission. Please try again.")
+    st.stop()
+else:
+    
+    st.set_page_config(layout="wide")
+
+    # Initialize session state for the full app
+    if 'user' not in st.session_state:
+        st.session_state.user = None
+    if 'page' not in st.session_state:
+        st.session_state.page = "Authentication"
+
+    initialize_default_users()
 # query_params = st.experimental_get_query_params()
 
-if 'token' in st.query_params:
-    # If a token is found, force the page to be "Shared Form".
-    st.session_state.page = "Shared Form"
+# if st.session_state.user is None and 'token' in st.query_params:
+#     st.session_state.page = "Shared Form"
 # Near the top of your script with other session state initializations
 
 # Role definitions
@@ -48,9 +110,10 @@ DEFAULT_USERS = {
 }
 from werkzeug.security import check_password_hash
 
-def authenticate_user(username: str, password: str) -> Optional[Dict]:
-    """Verify against hashed passwords"""
-    user = get_user(username)
+# ...and REPLACE it with this one:
+def authenticate_user(identifier: str, password: str) -> Optional[Dict]:
+    """Verify against hashed passwords using username, email, or phone."""
+    user = get_user_by_identifier(identifier)
     if user and check_password_hash(user['password_hash'], password):
         return {
             "id": user['id'],
@@ -112,7 +175,8 @@ if 'active_auth_tab' not in st.session_state:
 #Initialize page variable at the top
 if 'page' not in st.session_state:
     st.session_state.page = "auth"
-# Add this auth page handler
+
+# In app.py, find the entire "Authentication" page block and REPLACE it.
 if st.session_state.page == "Authentication":
     st.title("Authentication")
     
@@ -128,62 +192,123 @@ if st.session_state.page == "Authentication":
     with tab1:  # Login tab
         with st.form("login_form"):
             st.subheader("Login to Your Account")
-            username = st.text_input("Username")
+            identifier = st.text_input("Username, Email, or Phone")
             password = st.text_input("Password", type="password")
             
             if st.form_submit_button("Login"):
-                user = authenticate_user(username, password)
+                user = authenticate_user(identifier, password)
                 if user:
                     st.session_state.user = user
-                    # Redirect based on role
-                
                     if user["role"] == "viewer":
                         st.session_state.page = "fill"
                     st.success("Login successful! Redirecting...")
-                    # st.rerun()
+                    st.rerun()
                 else:
                     st.error("Invalid credentials")
     
     with tab2:  # Register tab
         with st.form("registration_form"):
             st.subheader("Create New Account")
-            new_username = st.text_input("Username")
+            new_username = st.text_input("Username*", help="This is how you will be identified in the system.")
+            new_email = st.text_input("Email", help="Required if phone is not provided.")
+            new_phone = st.text_input("Phone Number", help="Required if email is not provided.")
             new_password = st.text_input("Password", type="password")
             confirm_password = st.text_input("Confirm Password", type="password")
             
             if st.form_submit_button("Register"):
-                
-                if not new_username or not new_password:
-                    st.error("Please provide both username and password")
-                elif new_password != confirm_password:
-                    st.error("Passwords do not match")
-                elif not is_username_available(new_username):
-                    st.error("Username already taken")
-                else:
-                    if register_user(new_username, new_password):
-                        st.success("Registration successful! Please login.")
-                        # Switch to login tab after successful registration
-                        st.session_state.active_auth_tab = "Login"
-                        st.rerun()
-                    else:
-                        st.error("Registration failed. Please try again.")
-    with tab3:  # Password reset tab
-        with st.form("reset_form"):
-            st.subheader("Reset Your Password")
-            reset_username = st.text_input("Your Username")
-            new_password = st.text_input("New Password", type="password")
-            confirm_password = st.text_input("Confirm New Password", type="password")
-            
-            if st.form_submit_button("Reset Password"):
+                # Validation logic
+                error = False
+                if not new_username:
+                    st.error("Username is required.")
+                    error = True
+                if not new_email and not new_phone:
+                    st.error("Please provide either an email or a phone number.")
+                    error = True
                 if new_password != confirm_password:
-                    st.error("Passwords don't match!")
-                elif not is_username_available(reset_username):  # User exists
-                    if reset_user_password(reset_username, new_password):
-                        st.success("Password reset successfully! Please login with your new password.")
+                    st.error("Passwords do not match.")
+                    error = True
+                
+                # Check for conflicts only if basic validation passes
+                if not error:
+                    conflict = is_identifier_taken(username=new_username, email=new_email or None, phone=new_phone or None)
+                    if conflict:
+                        st.error(f"{conflict} is already taken.")
                     else:
-                        st.error("Password reset failed")
-                else:
-                    st.error("Username not found")
+                        if register_user(username=new_username, password=new_password, email=new_email or None, phone=new_phone or None):
+                            st.success("Registration successful! Please login.")
+                            st.session_state.active_auth_tab = "Login"
+                            st.rerun()
+                        else:
+                            st.error("Registration failed. Please try again.")
+
+    with tab3:  # Password reset tab - NEW MULTI-STEP FLOW
+        st.subheader("Reset Your Password")
+
+        # Initialize state for the multi-step reset process
+        if 'reset_step' not in st.session_state:
+            st.session_state.reset_step = "request_otp"
+
+        # --- Step 1: User requests an OTP ---
+        if st.session_state.reset_step == "request_otp":
+            with st.form("request_otp_form"):
+                identifier = st.text_input("Your Username, Email, or Phone")
+                
+                if st.form_submit_button("Send Reset Code"):
+                    user = get_user_by_identifier(identifier)
+                    if not user:
+                        st.error("Account not found.")
+                    elif not user.get('email'):
+                        st.error("This account does not have an email address on file. Cannot send reset code.")
+                    else:
+                        # Generate and send OTP
+                        otp = str(random.randint(100000, 999999))
+                        if send_otp_email(user['email'], otp):
+                            if store_otp_for_user(identifier, otp):
+                                st.success(f"A reset code has been sent to {user['email']}. Please check your inbox.")
+                                # Move to the next step
+                                st.session_state.reset_step = "verify_otp"
+                                st.session_state.reset_identifier = identifier
+                                st.rerun()
+                            else:
+                                st.error("Failed to store reset code. Please try again.")
+                        else:
+                            st.error("Failed to send email. Please check server configuration and try again later.")
+
+        # --- Step 2: User verifies OTP and enters new password ---
+        elif st.session_state.reset_step == "verify_otp":
+            with st.form("verify_otp_form"):
+                st.info(f"An OTP was sent to the email associated with '{st.session_state.reset_identifier}'.")
+                otp_input = st.text_input("Enter the 6-digit code (OTP)")
+                new_password = st.text_input("New Password", type="password")
+                confirm_password = st.text_input("Confirm New Password", type="password")
+
+                submitted = st.form_submit_button("Reset Password")
+                
+                if submitted:
+                    if new_password != confirm_password:
+                        st.error("Passwords don't match!")
+                    else:
+                        success, message = validate_otp_and_reset_password(
+                            st.session_state.reset_identifier, 
+                            otp_input, 
+                            new_password
+                        )
+                        if success:
+                            st.success("Password has been reset successfully! You can now log in.")
+                            # Reset the flow and switch to login tab
+                            del st.session_state.reset_step
+                            del st.session_state.reset_identifier
+                            st.session_state.active_auth_tab = "Login"
+                            st.rerun()
+                        else:
+                            st.error(f"Error: {message}")
+            
+            if st.button("Request a new code"):
+                # Go back to the first step
+                del st.session_state.reset_step
+                if 'reset_identifier' in st.session_state:
+                    del st.session_state.reset_identifier
+                st.rerun()
 # Form Creation Page
 elif st.session_state.page == "Form Creation":
     st.title("Form Generator")
@@ -208,11 +333,22 @@ elif st.session_state.page == "Form Creation":
         value=st.session_state.get('form_name', ''),
         key="form_name")
     existing_forms = [f for f in get_all_forms() if f != form_name and form_name not in get_child_forms(f)]
+    
+    # --- START OF FIX ---
+    
+    parent_form = "" # Default to an empty string, meaning no parent is selected.
+
     if existing_forms:
-        parent_form = st.selectbox("Link to Parent Form (optional)", 
-            [""] + existing_forms)
+        # The selectbox will return an empty string "" if the user chooses the first blank option.
+        # This correctly represents "no parent selected".
+        parent_form = st.selectbox(
+            "Link to Parent Form (optional)", 
+            [""] + existing_forms
+        )
     else:
-        parent_form = "None "
+        # When no forms exist, we simply show a disabled input or nothing at all.
+        # The 'parent_form' variable remains an empty string.
+        st.text_input("Link to Parent Form (optional)", "No parent forms available", disabled=True)
     
     # Reset fields if form name changes
     if form_name and form_name != st.session_state.prev_form_name:
@@ -360,66 +496,41 @@ elif st.session_state.page == "Form Creation":
             
                 # Provide an OPTIONAL button to enhance with LLM
                 st.info("The form is ready to use. You can optionally use the LLM to try and improve the styling.")
-                # if st.button("✨ Enhance with AI (may be slow)"):
-                #     with st.spinner(f"Sending '{form_name}' to the AI for enhancement... This may take a moment."):
-                        
-                #         # Ensure fields are hashable for caching if you use @lru_cache on generate_form_with_llama
-                #         # This is a good practice to prevent potential errors.
-                #         try:
-                #             fields_tuple = tuple(tuple(d.items()) for d in st.session_state.fields)
-                #             enhanced_html = generate_form_with_llama(form_name, fields_tuple)
-                #         except Exception as e:
-                #             st.error(f"AI enhancement failed: {e}")
-                #             enhanced_html = None # Ensure a value is set
-                #         if enhanced_html:
-                #             save_form_html(form_name, enhanced_html)
-                #             st.success("AI enhancement complete!")
-                #             st.subheader("Enhanced Form Preview")
-                #             st.components.v1.html(enhanced_html, height=500, scrolling=True)
-                
-                
             except Exception as e:
                 st.error(f"Form generation failed: {str(e)}")
                 # ... (keep your existing error handling) ...
         else:
-            st.warning("Please provide a form name and at least one field.")    
-    
+            st.warning("Please provide a form name and at least one field.")
     st.divider()
-    st.subheader("Share Form")
-    
-    # Generate or get existing token
-    # Generate or get existing token
-    if 'share_token' not in st.session_state or st.session_state.get('current_form_for_token') != form_name:
-        st.session_state.share_token = get_share_token(form_name) or ""
-        st.session_state.current_form_for_token = form_name
-    
-    if st.button("Generate Share Link"):
-        import uuid
-        new_token = str(uuid.uuid4())
-        if set_form_share_token(form_name, new_token):
-            st.session_state.share_token = new_token
-            st.success("Share token created!")
-        else:
-            st.error("Failed to create share token")
-    
-    if st.session_state.share_token:
-        base_url = os.getenv("BASE_URL", "http://localhost:8501")
-        share_url = f"{base_url}/?token={st.session_state.share_token}"
-        st.success("Form is shareable! Copy the link below:")
-        st.code(share_url, language="text")
-        
-        # Embedding option
-        st.subheader("Embed Form")
-        embed_code = generate_embed_code(form_name, st.session_state.share_token, base_url)
-        st.code(embed_code, language="html")
-        
-        if st.button("Revoke Access"):
-            if set_form_share_token(form_name, None):
-                st.session_state.share_token = ""
-                st.success("Access revoked!")
+    with st.expander("✨ Generate Fields with AI (Optional)"):
+        ai_description = st.text_area(
+            "Describe the form you want to create...",
+            help='Example: "A user feedback form with fields for their name, email, rating from 1 to 5, and comments."'
+        )
+        if st.button("Generate Fields with AI"):
+            if not ai_description:
+                st.warning("Please enter a description for the AI.")
             else:
-                st.error("Failed to revoke access")
-
+                with st.spinner("🧠 AI is thinking... Please wait."):
+                    success, content = generate_fields_with_llama(ai_description)
+                    if success:
+                        try:
+                            # Parse the JSON string and update the session state
+                            new_fields = json.loads(content)
+                            if isinstance(new_fields, list):
+                                st.session_state.fields = new_fields
+                                st.success("AI generated the fields successfully!")
+                                st.rerun() # Rerun to display the new fields
+                            else:
+                                st.error("AI did not return a valid list of fields. Please try again.")
+                        except json.JSONDecodeError:
+                            st.error(f"AI returned an invalid response. Please try rephrasing your request.\nDetails: {content}")
+                    else:
+                        st.error(f"Failed to generate fields: {content}")    
+    
+    # Generate or get existing token
+    # Generate or get existing token
+    
 # Form Filling Page
 elif st.session_state.page == "Form Filling":
     st.title("Fill Form")
@@ -858,39 +969,45 @@ elif st.session_state.page == "Form Filling":
                             st.write("Fields:", fields)
                             st.write("Full error traceback:")
                             st.exception(e)
-elif st.session_state.page == "Shared Form":
-    st.title("Public Form")
-    
-    # Get token from URL
-    
-    token = st.query_params.get("token")
-    
-    if not token:
-        st.error("Missing form token in URL")
-        st.stop()
-    
-    form_meta = get_form_by_token(token)
-    if not form_meta:
-        st.error("Invalid or expired form token")
-        st.stop()
-    
-    form_name = form_meta["form_name"]
-    fields = form_meta["fields"]
-    
-    st.subheader(f"Form: {form_name}")
-    
-    # Render form similar to Form Filling page
-    with st.form(key=f"shared_form_{token}"):
-        form_data = {}
-        # ... (same field rendering logic as Form Filling page) ...
-        
-        submitted = st.form_submit_button("Submit")
-        
-        if submitted:
-            if save_form_data(form_name, form_data):
-                st.success("Form submitted successfully!")
-            else:
-                st.error("Error saving submission")
+            st.markdown("---")
+            with st.expander("🚀 Share or Embed this Form"):
+                # Ensure a form is selected before showing share options
+                if form_name:
+                    # Get the token from the database if it exists
+                    if 'share_token' not in st.session_state or st.session_state.get('current_form_for_token') != form_name:
+                        st.session_state.share_token = get_share_token(form_name)
+                        st.session_state.current_form_for_token = form_name
+
+                    if st.button("Generate Sharable Link", key=f"share_{form_name}"):
+                        import uuid
+                        new_token = str(uuid.uuid4())
+                        if set_form_share_token(form_name, new_token):
+                            st.session_state.share_token = new_token
+                            st.success("Share link created successfully!")
+                            st.rerun()
+                        else:
+                            st.error("Failed to create share token.")
+
+                    if st.session_state.get('share_token'):
+                        base_url = os.getenv("BASE_URL", "http://localhost:8501")
+                        share_url = f"{base_url}?token={st.session_state.share_token}"
+                        
+                        st.success("This form is public. Anyone with the link can view and submit it.")
+                        st.text_input("Sharable Link (Copy this)", share_url, key=f"share_url_{form_name}")
+                        
+                        embed_code = generate_embed_code(form_name, st.session_state.share_token, base_url)
+                        st.code(embed_code, language="html")
+                        
+                        if st.button("Revoke Share Link", type="primary", key=f"revoke_{form_name}"):
+                            if set_form_share_token(form_name, None): # Set token to NULL
+                                st.session_state.share_token = None
+                                st.success("Access revoked!")
+                                st.rerun()
+                else:
+                    st.info("Select a form from the dropdown above to get sharing options.")
+
+# Add this new page block before the "Admin View" page block
+
 # Admin Page
 elif st.session_state.page == "Admin View":
     st.title("Admin View")
@@ -1359,48 +1476,211 @@ elif st.session_state.page == "Admin View":
                                         parent_df = pd.DataFrame(parent_records)
                                         st.write(f"### {parent_form}")
                                         st.dataframe(parent_df)
+                        # --- START: NEW INFORMATIVE & ATTRACTIVE DASHBOARD V2 ---
+            st.markdown("---")
+            st.subheader("📊 Analytical Dashboard")
+
+            if filtered_df.empty:
+                st.warning("No data matches the current filters.")
+            else:
+                import plotly.express as px
+
+                # Create tabs for different views
+                tab1, tab2, tab3 = st.tabs(["  KPIs & Trends ", " Deep Dive Analysis ", " Data Relationships "])
+
+                with tab1:
+                    st.markdown("#### Key Performance Indicators")
+                    
+                    # --- Calculate KPIs with Deltas ---
+                    total_unfiltered = len(df)
+                    total_filtered = len(filtered_df)
+                    
+                    # --- Display KPIs ---
+                    kpi_cols = st.columns(3)
+                    kpi_cols[0].metric(
+                        label="📝 Submissions in View", 
+                        value=f"{total_filtered:,}",
+                        delta=f"{(total_filtered / total_unfiltered * 100):.1f}% of Total" if total_unfiltered > 0 else "0%"
+                    )
+                    
+                    first_text_col = next((col for col in filtered_df.columns if filtered_df[col].dtype == 'object' and col.lower() not in ['id', 'select']), None)
+                    if first_text_col:
+                        kpi_cols[1].metric(label=f"👥 Unique '{first_text_col.title()}'", value=f"{filtered_df[first_text_col].nunique():,}")
+                    
+                    first_num_col = next((col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col]) and col.lower() not in ['id', 'parent_id']), None)
+                    if first_num_col:
+                        avg_val = filtered_df[first_num_col].mean()
+                        kpi_cols[2].metric(label=f"🧮 Avg. '{first_num_col.title()}'", value=f"{avg_val:,.2f}")
+
+                    # Interactive Time Series Analysis
+                    if 'created_at' in filtered_df.columns:
+                        st.markdown("#### Submissions Over Time")
+                        ts_df = filtered_df.copy()
+                        ts_df['created_at'] = pd.to_datetime(ts_df['created_at'], errors='coerce')
+                        ts_df = ts_df.dropna(subset=['created_at'])
+                        
+                        if not ts_df.empty:
+                            agg_period = st.selectbox("Group by", ["Day", "Week", "Month"], index=0)
+                            period_map = {"Day": "D", "Week": "W", "Month": "M"}
                             
-            # Add download button
-            csv = filtered_df.drop(columns=['Select']).to_csv(index=False).encode('utf-8')
-            st.download_button(
-                "Download CSV",
-                csv,
-                f"{form_name.replace(' ', '_')}_data.csv",
-                "text/csv",
-                key=f'download-csv-{st.session_state.active_admin_tab}'
-            )
+                            submissions_by_period = ts_df.set_index('created_at').resample(period_map[agg_period]).size().reset_index(name='count')
+                            fig = px.line(submissions_by_period, x='created_at', y='count', title=f"{agg_period}ly Submission Volume", markers=True, template="seaborn")
+                            fig.update_layout(xaxis_title="Date", yaxis_title="Number of Submissions")
+                            st.plotly_chart(fig, use_container_width=True)
+
+                with tab2:
+                    st.markdown("#### Analyze a Specific Field")
+                    
+                    # Get a list of interesting columns to analyze
+                    analysis_cols = [col for col in filtered_df.columns if col.lower() not in ['id', 'parent_id', 'created_at', 'select']]
+                    
+                    if not analysis_cols:
+                        st.info("No fields available for deep dive analysis.")
+                    else:
+                        selected_col = st.selectbox("Select a field to analyze", analysis_cols)
+                        st.markdown(f"##### Analysis for **{selected_col.title()}**")
+
+                        # Perform analysis based on column type
+                        if pd.api.types.is_numeric_dtype(filtered_df[selected_col]):
+                            fig = px.histogram(filtered_df, x=selected_col, nbins=30, title=f"Distribution of {selected_col.title()}", template="plotly_white")
+                            st.plotly_chart(fig, use_container_width=True)
+                        else:
+                            # For categorical data, choose chart type based on number of unique values
+                            unique_count = filtered_df[selected_col].nunique()
+                            if 2 <= unique_count <= 10:
+                                st.markdown("###### Proportion View")
+                                fig = px.pie(filtered_df, names=selected_col, title=f"Proportion of Categories in {selected_col.title()}", hole=0.3)
+                                st.plotly_chart(fig, use_container_width=True)
+                            
+                            st.markdown("###### Count View")
+                            top_categories = filtered_df[selected_col].value_counts().nlargest(20)
+                            fig_bar = px.bar(top_categories, x=top_categories.index, y=top_categories.values, title=f"Top {len(top_categories)} Categories for {selected_col.title()}", template="plotly_white")
+                            fig_bar.update_layout(xaxis_title=selected_col.title(), yaxis_title="Count")
+                            st.plotly_chart(fig_bar, use_container_width=True)
+
+                with tab3:
+                    st.markdown("#### Exploring Relationships Between Fields")
+                    numeric_cols = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col]) and col.lower() not in ['id', 'parent_id']]
+                    categorical_cols = [col for col in filtered_df.columns if filtered_df[col].dtype == 'object' and col.lower() not in ['id', 'select']]
+                    
+                    if len(numeric_cols) >= 2:
+                        st.markdown("##### Multi-Dimensional Scatter Plot")
+                        scatter_cols = st.columns(3)
+                        x_axis = scatter_cols[0].selectbox("Select X-Axis", numeric_cols, key="scatter_x")
+                        y_axis = scatter_cols[1].selectbox("Select Y-Axis", numeric_cols, key="scatter_y", index=min(1, len(numeric_cols)-1))
+                        color_axis = scatter_cols[2].selectbox("Color By (Optional)", [None] + categorical_cols, key="scatter_color")
+                        
+                        fig = px.scatter(filtered_df, x=x_axis, y=y_axis, color=color_axis,
+                                        title=f"{y_axis.title()} vs. {x_axis.title()}",
+                                        trendline="ols", trendline_scope="overall", template="seaborn")
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        st.markdown("##### Correlation Heatmap")
+                        corr = filtered_df[numeric_cols].corr()
+                        fig_heatmap = px.imshow(corr, text_auto=True, aspect="auto", title="Numeric Field Correlation Matrix", color_continuous_scale='RdBu_r')
+                        st.plotly_chart(fig_heatmap, use_container_width=True)
+                    else:
+                        st.info("At least two numeric columns are required to explore data relationships.")
+            
+            # --- END OF DASHBOARD ---
+            st.subheader("Export Data")
+            export_cols = st.columns(3)
+            # Make sure to create a clean DataFrame for export without the 'Select' column
+            df_for_export = filtered_df.drop(columns=['Select'], errors='ignore')
+
+            with export_cols[0]:
+                # CSV Download Button
+                csv = df_for_export.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    "📥 Download CSV",
+                    csv,
+                    f"{form_name.replace(' ', '_')}_data.csv",
+                    "text/csv",
+                    use_container_width=True,
+                    key=f'download-csv-{st.session_state.active_admin_tab}'
+                )
+
+            with export_cols[1]:
+                # PDF Download Button
+                try:
+                    pdf_data = generate_pdf_from_dataframe(df_for_export, form_name)
+                    st.download_button(
+                        label="📄 Download PDF",
+                        data=pdf_data,
+                        file_name=f"{form_name.replace(' ', '_')}_data.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key=f'download-pdf-{st.session_state.active_admin_tab}'
+                    )
+                except Exception as e:
+                    st.error(f"PDF generation failed: {e}")
+
+
+            with export_cols[2]:
+                # Excel Download Button
+                try:
+                    excel_data = generate_excel_from_dataframe(df_for_export)
+                    st.download_button(
+                        label="📊 Download Excel",
+                        data=excel_data,
+                        file_name=f"{form_name.replace(' ', '_')}_data.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True,
+                        key=f'download-excel-{st.session_state.active_admin_tab}'
+                    )
+                except Exception as e:
+                    st.error(f"Excel generation failed: {e}")                
+            # # Add download button
+            # csv = filtered_df.drop(columns=['Select']).to_csv(index=False).encode('utf-8')
+            # st.download_button(
+            #     "Download CSV",
+            #     csv,
+            #     f"{form_name.replace(' ', '_')}_data.csv",
+            #     "text/csv",
+            #     key=f'download-csv-{st.session_state.active_admin_tab}'
+            # )
     else:
         st.info("No analysis tabs open. Click '+ New' to start.")
 
 elif st.session_state.page == "User Management":
     st.title("User Management")
     
-    # Strict admin-only check
     if not st.session_state.user or "admin" not in st.session_state.user["permissions"]:
         st.error("🔒 Administrator privileges required")
         st.stop()
     
-    # Create tabs for different functions
-    tab1, tab2, tab3, tab4 = st.tabs(["Create Users", "Manage Users", "Password Reset","🩺 System Health"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Create Users", "Manage Users", "Password Reset", "🩺 System Health"])
     
     with tab1:
         with st.form("create_user_form"):
             st.subheader("Create New User")
-            new_username = st.text_input("Username", help="Must be unique")
+            new_username = st.text_input("Username*", help="Must be unique.")
+            new_email = st.text_input("Email", help="Provide email or phone.")
+            new_phone = st.text_input("Phone Number", help="Provide email or phone.")
             new_password = st.text_input("Password", type="password", help="Minimum 8 characters")
             new_role = st.selectbox("Role", ["admin", "editor", "viewer"])
             
             if st.form_submit_button("Create User"):
+                error = False
                 if len(new_password) < 8:
-                    st.error("Password must be at least 8 characters")
-                elif not new_username:
-                    st.error("Username is required")
-                else:
-                    if create_user(new_username, new_password, new_role):
+                    st.error("Password must be at least 8 characters.")
+                    error = True
+                if not new_username:
+                    st.error("Username is required.")
+                    error = True
+                if not new_email and not new_phone:
+                    st.error("Please provide either an email or a phone number.")
+                    error = True
+                
+                if not error:
+                    conflict = is_identifier_taken(username=new_username, email=new_email or None, phone=new_phone or None)
+                    if conflict:
+                        st.error(f"{conflict} already exists.")
+                    elif create_user(username=new_username, password=new_password, role=new_role, email=new_email or None, phone=new_phone or None):
                         st.success(f"User {new_username} created as {new_role}")
                         st.rerun()
                     else:
-                        st.error("Username already exists or creation failed")
+                        st.error("User creation failed.")
 
     with tab2:
         st.subheader("Existing Users")
@@ -1410,7 +1690,6 @@ elif st.session_state.page == "User Management":
             st.info("No users found in the system")
             st.stop()
             
-        # Bulk actions section
         with st.expander("⚡ Bulk Actions", expanded=True):
             selected_users = st.multiselect(
                 "Select users to manage",
@@ -1420,84 +1699,61 @@ elif st.session_state.page == "User Management":
             
             if selected_users:
                 col1, col2 = st.columns(2)
-                
                 with col1:
-                    new_role = st.selectbox(
-                        "Set new role for selected users",
-                        ["admin", "editor", "viewer"],
-                        key="bulk_role"
-                    )
+                    new_role = st.selectbox("Set new role", ["admin", "editor", "viewer"], key="bulk_role")
                     if st.button("Update Roles", key="bulk_update"):
-                        success = 0
-                        for username in selected_users:
-                            if update_user_role(username, new_role):
-                                success += 1
-                        st.success(f"Updated {success}/{len(selected_users)} users")
+                        success = sum(1 for u in selected_users if update_user_role(u, new_role))
+                        st.success(f"Updated {success}/{len(selected_users)} users.")
                         st.rerun()
-                
                 with col2:
-                    st.write("")  # Spacer
+                    st.write("")
                     if st.button("🗑️ Delete Selected", type="primary", key="bulk_delete"):
-                        success = 0
-                        for username in selected_users:
-                            if delete_user(username):
-                                success += 1
-                        st.success(f"Deleted {success}/{len(selected_users)} users")
+                        success = sum(1 for u in selected_users if delete_user(u))
+                        st.success(f"Deleted {success}/{len(selected_users)} users.")
                         st.rerun()
         
-        # Detailed user list
         st.markdown("---")
         st.subheader("Individual User Management")
         
         for user in users:
-            # Skip current user
             if user['username'] == st.session_state.user['username']:
                 continue
-                
-            with st.expander(f"👤 {user['username']} (Role: {user['role']})"):
+            
+            display_info = f"👤 {user['username']} (Role: {user['role']}) | Email: {user.get('email') or 'N/A'} | Phone: {user.get('phone') or 'N/A'}"
+            with st.expander(display_info):
                 col1, col2 = st.columns([3, 1])
-                
                 with col1:
-                    new_role = st.selectbox(
-                        "Change role",
-                        ["admin", "editor", "viewer"],
-                        index=["admin", "editor", "viewer"].index(user['role']),
-                        key=f"role_{user['id']}"
-                    )
+                    new_role = st.selectbox("Change role", ["admin", "editor", "viewer"], index=["admin", "editor", "viewer"].index(user['role']), key=f"role_{user['id']}")
                     if st.button("Update Role", key=f"update_{user['id']}"):
                         if update_user_role(user['username'], new_role):
-                            st.success("Role updated successfully")
+                            st.success("Role updated.")
                             st.rerun()
-                
                 with col2:
                     if st.button("Delete", key=f"delete_{user['id']}"):
                         if delete_user(user['username']):
-                            st.success("User deleted successfully")
+                            st.success("User deleted.")
                             st.rerun()
                         else:
-                            st.error("Deletion failed")
+                            st.error("Deletion failed.")
 
     with tab3:
         st.subheader("Password Reset Tool")
+        all_users = get_all_users()
         with st.form("password_reset_form"):
-            reset_username = st.selectbox(
-                "Select User",
-                [u['username'] for u in users],
-                key="reset_select"
-            )
+            reset_username = st.selectbox("Select User", [u['username'] for u in all_users], key="reset_select")
             new_password = st.text_input("New Password", type="password", key="new_pw")
             confirm_password = st.text_input("Confirm Password", type="password", key="confirm_pw")
             
             if st.form_submit_button("Reset Password"):
                 if len(new_password) < 8:
-                    st.error("Password must be at least 8 characters")
+                    st.error("Password must be at least 8 characters.")
                 elif new_password != confirm_password:
                     st.error("Passwords don't match!")
                 else:
                     if reset_user_password(reset_username, new_password):
-                        st.success(f"Password reset for {reset_username}")
+                        st.success(f"Password reset for {reset_username}.")
                     else:
-                        st.error("Password reset failed")
+                        st.error("Password reset failed.")
     with tab4:
         st.subheader("Form Relationship Health Check")
         st.info("Use this tool to find and fix broken parent-child form links.")
@@ -1840,7 +2096,28 @@ elif st.session_state.page == "Update Forms":
                         st.error(f"Error updating form: {str(e)}")
             # --- ADDED THIS NEW COLUMN AND LOGIC ---
             with col4:
-                pass
+                # This button enhances the *currently saved* state of the form
+                if st.button("✨ Enhance with AI"):
+                    st.info("Note: This will enhance the last saved version of the form's fields.")
+                    with st.spinner(f"Sending '{selected_form}' to the AI for enhancement..."):
+                        try:
+                            # Use the 'original_fields' which represents the last saved state
+                            fields_to_enhance = st.session_state.original_fields
+                            fields_tuple = tuple(tuple(d.items()) for d in fields_to_enhance)
+                            
+                            # Call the LLM function
+                            enhanced_html = enhance_html_with_llama(selected_form, fields_tuple)
+                            
+                            if enhanced_html:
+                                save_form_html(selected_form, enhanced_html)
+                                st.success("AI enhancement complete!")
+                                st.subheader("Enhanced Form Preview")
+                                st.components.v1.html(enhanced_html, height=500, scrolling=True, key="enhanced_preview")
+                            else:
+                                st.error("AI enhancement failed to produce a result.")
+
+                        except Exception as e:
+                            st.error(f"AI enhancement failed: {e}")
             # Rest of the update form code remains the same...
             # [Previous update form implementation goes here]
     # THIS IS THE NEW, CORRECTED CODE

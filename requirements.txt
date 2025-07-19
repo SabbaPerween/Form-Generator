@@ -1,4 +1,9 @@
 streamlit
 psycopg2-binary
+python-dotenv
+ollama
 graphviz
 werkzeug
+fpdf2
+openpyxl
+plotly

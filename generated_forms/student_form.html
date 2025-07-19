@@ -1,41 +1,36 @@
 
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            ```
-<form class="student-form mb-3">
-  <label for="name">Name:</label>
-  <input type="text" name="name" id="name" required>
-  
-  <label for="dob">Date of Birth:</label>
-  <input type="date" name="dob" id="dob" required>
-  
-  <label for="class">Class:</label>
-  <select name="class" id="class" required>
-    <option value="">Select Class</option>
-    <option value="1">Class 1</option>
-    <option value="2">Class 2</option>
-    <option value="3">Class 3</option>
-  </select>
-  
-  <label for="phone">Phone Number:</label>
-  <input type="tel" name="phone" id="phone" required pattern="[0-9]{10,15}" title="10-15 digit phone number">
-  
-  <label for="checkbox">Checkbox:</label>
-  <input type="checkbox" name="checkbox" id="checkbox" required>
-  
-  <button type="submit" class="btn btn-primary">Submit</button>
-</form>
-```
-Explanation:
+    <style>
+    /* Fix for navigation arrows */
+    .nav-arrow {
+        display: inline-block;
+        margin: 0 5px;
+    }
+    .nav-arrow::after {
+        content: ">";
+        font-family: inherit;
+    }
+    </style>
+    
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Student Form</h2>
+        <form action="#" method="POST">
+            <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
 
-* The form is wrapped in a `div` with class `student-form`, which is set to have a margin of 3 using Bootstrap's grid system.
-* Each field is wrapped in a `div` with class `mb-3`, which adds margin bottom equal to 3.
-* The input types are chosen based on the data types:
-	+ `VARCHAR(255)`/`TEXT`: text input or textarea
-	+ `INTEGER/FLOAT`: number input
-	+ `DATE`: date input
-	+ `BOOLEAN`: checkbox
-	+ `PHONE`: tel input with pattern validation
-* The `required` attribute is added to all fields to ensure they are required.
-* A submit button with class `btn btn-primary` is included to submit the form.
-* Form labels are added for each field, along with an ID that matches the input name.
-* For phone fields, a pattern of `[0-9]{10,15}` and a title of "10-15 digit phone number" are added to ensure the user enters a valid phone number.
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</body>
+</html>
+    

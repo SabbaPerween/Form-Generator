@@ -1,51 +1,40 @@
 
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            ```
-<form class="needs-validation" novalidate>
-  <div class="mb-3">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" required pattern="[a-zA-Z]{1,50}" title="Must be a valid name (max 50 characters)">
-  </div>
-  
-  <div class="mb-3">
-    <label for="dob">Date of Birth:</label>
-    <input type="date" id="dob" name="dob" required pattern="[01/01/1900 - 01/01/2100]" title="Must be a valid date of birth (format: mm/dd/yyyy)">
-  </div>
-  
-  <div class="mb-3">
-    <label for="class">Class:</label>
-    <select id="class" name="class" required>
-      <option value="">Select a class</option>
-      <option value="A">Class A</option>
-      <option value="B">Class B</option>
-      <option value="C">Class C</option>
-    </select>
-  </div>
-  
-  <div class="mb-3">
-    <label for="phone">Phone Number:</label>
-    <input type="tel" id="phone" name="phone" required pattern="[0-9]{10,15}" title="Must be a valid phone number (10-15 digits)">
-  </div>
-  
-  <div class="mb-3">
-    <label for="checkbox">Checkbox:</label>
-    <input type="checkbox" id="checkbox" name="checkbox" required>
-  </div>
-  
-  <button type="submit" class="btn btn-primary">Submit</button>
-</form>
-```
-Explanation:
+    <style>
+    /* Fix for navigation arrows */
+    .nav-arrow {
+        display: inline-block;
+        margin: 0 5px;
+    }
+    .nav-arrow::after {
+        content: ">";
+        font-family: inherit;
+    }
+    </style>
+    
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students_Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Students_Form</h2>
+        <form action="#" method="POST">
+            <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <div class="mb-3">
+            <label for="age" class="form-label">Age</label>
+            <input type="number" class="form-control" id="age" name="age" required>
+        </div>
 
-* The form is wrapped in a `form` element with the `class` attribute set to `needs-validation novalidate`. This sets the form to validate its inputs and disables the submit button until all required fields are filled.
-* Each field is wrapped in a `div` element with the `class` attribute set to `mb-3`. This adds margin bottom to each field for better spacing.
-* The label for each field is placed inside a `label` element with the `for` attribute set to the input's ID. This creates an association between the label and the input.
-* Input types are used based on data types:
-	+ `VARCHAR(255)`/`TEXT`: Text input or textarea for name and phone fields.
-	+ `INTEGER/FLOAT`: Number input for class field.
-	+ `DATE`: Date input for DOB field.
-	+ `BOOLEAN`: Checkbox input for checkbox field.
-	+ `PHONE`: Tel input with pattern validation for phone number field. The pattern is set to `[0-9]{10,15}`, which allows only 10-15 digit phone numbers. The title is set to "Must be a valid phone number (10-15 digits)".
-* The `required` attribute is added to all fields to ensure they are filled in before submitting the form.
-* A submit button with class `btn btn-primary` is included at the bottom of the form for submission.
-* Field names are used for input names and IDs, which helps with form validation and accessibility.
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</body>
+</html>
+    

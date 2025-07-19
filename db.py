@@ -2,11 +2,13 @@
 import psycopg2
 import os
 import streamlit as st
-
+from dotenv import load_dotenv
 import logging
 import json
 from typing import Dict, List, Optional, Union
 import re
+import random
+from email_utils import send_otp_email
 import datetime
 from urllib.parse import urlparse
 from streamlit.runtime.uploaded_file_manager import UploadedFile
@@ -14,33 +16,41 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 logging.basicConfig(level=logging.INFO) 
 logger = logging.getLogger(__name__)
 
+load_dotenv()
+
 def get_connection():
-    try:
-        return psycopg2.connect(
-            host=st.secrets["postgres"]["host"],
-            port=st.secrets["postgres"]["port"],
-            dbname=st.secrets["postgres"]["dbname"],
-            user=st.secrets["postgres"]["user"],
-            password=st.secrets["postgres"]["password"],
-            sslmode='require'
-        )
-    except Exception as e:
-        st.error(f"Database connection failed: {str(e)}")
-        st.stop()
-def test_connection():
-    try:
-        conn = get_connection()
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1")
-            result = cur.fetchone()
-        return result[0] == 1
-    except Exception as e:
-        st.error(f"Connection test failed: {str(e)}")
-        return False
+    return psycopg2.connect(
+        dbname=os.getenv("DB_NAME", "form_generator"),
+        user=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASSWORD"),
+        host=os.getenv("DB_HOST", "localhost"),
+        port=os.getenv("DB_PORT", "5432")
+    )
+
 def initialize_database():
     """Initialize database with required tables"""
     commands = [
         """
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(255) UNIQUE NOT NULL,
+            email VARCHAR(255) UNIQUE,
+            phone VARCHAR(20) UNIQUE,
+            password_hash VARCHAR(255) NOT NULL,
+            role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+            otp VARCHAR(6),
+            otp_expires_at TIMESTAMP,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+        """,
+        """
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS otp VARCHAR(6);
+        """,
+        """
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;
+        """,
+        """
+        
         CREATE TABLE IF NOT EXISTS forms (
             id SERIAL PRIMARY KEY,
             form_name VARCHAR(255) UNIQUE NOT NULL,
@@ -52,13 +62,7 @@ def initialize_database():
         )
         """,
         """
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR(255) UNIQUE NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            role VARCHAR(50) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        ALTER TABLE forms ADD COLUMN IF NOT EXISTS share_token VARCHAR(255) UNIQUE;
         """,
         """
         CREATE TABLE IF NOT EXISTS form_permissions (
@@ -686,23 +690,65 @@ def get_child_forms(parent_form_name: str) -> List[str]:
     except Exception as e:
         logger.error(f"Error getting child forms for '{parent_form_name}': {str(e)}")
         return []
-def get_parent_forms(child_form):
-    """Get all parent forms for a given child form"""
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            sanitized_child = child_form.replace(" ", "_").lower()
-            cur.execute("""
-                SELECT ccu.table_name 
-                FROM information_schema.table_constraints tc
-                JOIN information_schema.constraint_column_usage ccu
-                ON tc.constraint_name = ccu.constraint_name
-                WHERE tc.table_name = %s
-                AND tc.constraint_type = 'FOREIGN KEY'
-                AND tc.constraint_name LIKE 'fk_parent_%%'
-            """, (sanitized_child,))
-            return [row[0].replace('_', ' ') for row in cur.fetchall()]
-# In db.py, find and replace the existing delete_form function
+# def get_parent_forms(child_form):
+#     """Get all parent forms for a given child form"""
+#     with get_connection() as conn:
+#         with conn.cursor() as cur:
+#             sanitized_child = child_form.replace(" ", "_").lower()
+#             cur.execute("""
+#                 SELECT ccu.table_name 
+#                 FROM information_schema.table_constraints tc
+#                 JOIN information_schema.constraint_column_usage ccu
+#                 ON tc.constraint_name = ccu.constraint_name
+#                 WHERE tc.table_name = %s
+#                 AND tc.constraint_type = 'FOREIGN KEY'
+#                 AND tc.constraint_name LIKE 'fk_parent_%%'
+#             """, (sanitized_child,))
+#             return [row[0].replace('_', ' ') for row in cur.fetchall()]
+# # In db.py, find and replace the existing delete_form function
+# This is the NEW, corrected function. Use this in its place.
+def get_parent_forms(child_form_name: str) -> List[str]:
+    """
+    Correctly finds all parent forms for a given child form by inspecting
+    foreign key constraints. This is the robust replacement for the old function.
+    """
+    child_table_name = child_form_name.replace(" ", "_").lower()
+    parent_forms = []
 
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                # This query robustly finds the parent table that the child table's
+                # foreign key points to, without relying on a specific constraint name.
+                # tc.table_name is the child (the table with the constraint).
+                # ccu.table_name is the parent (the table being referenced).
+                cur.execute("""
+                    SELECT
+                        ccu.table_name AS parent_table_name
+                    FROM
+                        information_schema.table_constraints AS tc
+                    JOIN information_schema.constraint_column_usage AS ccu
+                        ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
+                    WHERE
+                        tc.constraint_type = 'FOREIGN KEY' AND tc.table_name = %s
+                """, (child_table_name,))
+
+                parent_table_names = [row[0] for row in cur.fetchall()]
+
+                if not parent_table_names:
+                    return []
+
+                # For each parent table found, convert its database name back to the "pretty" form name.
+                for table_name in parent_table_names:
+                    # This relies on the get_form_name_from_table_name helper function already in your file.
+                    pretty_name = get_form_name_from_table_name(table_name, cur)
+                    if pretty_name:
+                        parent_forms.append(pretty_name)
+                
+                return parent_forms
+    except Exception as e:
+        logger.error(f"Error getting parent forms for '{child_form_name}': {str(e)}")
+        return []
 def delete_form(form_name: str) -> tuple[bool, str]:
     """
     Safely deletes a form, its table, and related metadata.
@@ -1607,8 +1653,306 @@ def link_child_to_parent(child_form_name: str, parent_form_name: str) -> tuple[b
         logger.error(message)
         return (False, message)
     
+# def set_form_share_token(form_name: str, token: str) -> bool:
+#     """Set share token for a form"""
+#     try:
+#         with get_connection() as conn:
+#             with conn.cursor() as cur:
+#                 cur.execute(
+#                     "UPDATE forms SET share_token = %s WHERE form_name = %s",
+#                     (token, form_name)
+#                 )
+#                 conn.commit()
+#                 return True
+#     except Exception as e:
+#         logger.error(f"Error setting share token: {str(e)}")
+#         return False
+
+# def get_form_by_token(token: str) -> Optional[Dict]:
+#     """Get form metadata by share token"""
+#     with get_connection() as conn:
+#         with conn.cursor() as cur:
+#             cur.execute(
+#                 "SELECT form_name, fields FROM forms WHERE share_token = %s",
+#                 (token,)
+#             )
+#             result = cur.fetchone()
+#             if result:
+#                 return {
+#                     "form_name": result[0],
+#                     "fields": result[1]
+#                 }
+#             return None
+
+# def get_share_token(form_name: str) -> Optional[str]:
+#     """Get existing share token for a form"""
+#     with get_connection() as conn:
+#         with conn.cursor() as cur:
+#             cur.execute(
+#                 "SELECT share_token FROM forms WHERE form_name = %s",
+#                 (form_name,)
+#             )
+#             result = cur.fetchone()
+#             return result[0] if result else None
+        
+
+def get_user_by_identifier(identifier: str) -> Optional[Dict]:
+    """
+    Get user by username, email, or phone using a CASE-INSENSITIVE search.
+    Also retrieves OTP fields needed for the password reset flow.
+    """
+    if not identifier:
+        return None
+    
+    # Normalize the input to be lowercase and without leading/trailing whitespace.
+    normalized_identifier = identifier.strip().lower()
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # The query now uses LOWER() on the database columns for a case-insensitive match.
+            # It also selects the otp and otp_expires_at columns.
+            cur.execute(
+                """SELECT id, username, email, phone, password_hash, role, otp, otp_expires_at
+                   FROM users
+                   WHERE LOWER(username) = %s OR LOWER(email) = %s OR LOWER(phone) = %s""",
+                (normalized_identifier, normalized_identifier, normalized_identifier)
+            )
+            result = cur.fetchone()
+            if result:
+                return {
+                    "id": result[0],
+                    "username": result[1],
+                    "email": result[2],
+                    "phone": result[3],
+                    "password_hash": result[4],
+                    "role": result[5],
+                    "otp": result[6],              # <-- CRITICAL: Added OTP field
+                    "otp_expires_at": result[7]   # <-- CRITICAL: Added OTP expiration field
+                }
+            return None
+
+# Also in db.py, find the existing store_otp_for_user function and REPLACE it.
+
+def store_otp_for_user(identifier: str, otp: str) -> bool:
+    """Stores the OTP for the user, finding them with a CASE-INSENSITIVE search."""
+    expires_at = datetime.datetime.now() + timedelta(minutes=10)
+    
+    # Normalize the input to be lowercase and without leading/trailing whitespace.
+    normalized_identifier = identifier.strip().lower()
+
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                # The query now uses LOWER() on the database columns for a case-insensitive match.
+                cur.execute(
+                    """UPDATE users SET otp = %s, otp_expires_at = %s
+                    WHERE LOWER(username) = %s OR LOWER(email) = %s OR LOWER(phone) = %s""",
+                    (otp, expires_at, normalized_identifier, normalized_identifier, normalized_identifier)
+                )
+                conn.commit()
+                # Check if any row was actually updated. If not, the user wasn't found.
+                if cur.rowcount > 0:
+                    return True
+                else:
+                    logger.warning(f"Attempted to store OTP, but no user found for identifier: {identifier}")
+                    return False
+    except Exception as e:
+        logger.error(f"Error storing OTP for user {identifier}: {e}")
+        return False
+
+def is_identifier_taken(username: Optional[str] = None, email: Optional[str] = None, phone: Optional[str] = None) -> Optional[str]:
+    """
+    Checks if a username, email, or phone is already taken.
+    Returns the name of the field that is taken (e.g., 'Username'), or None if all are available.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            if username:
+                cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
+                if cur.fetchone():
+                    return "Username"
+            if email:
+                cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+                if cur.fetchone():
+                    return "Email"
+            if phone:
+                cur.execute("SELECT 1 FROM users WHERE phone = %s", (phone,))
+                if cur.fetchone():
+                    return "Phone"
+            return None
+
+def register_user(password: str, username: str, email: Optional[str] = None, phone: Optional[str] = None, role: str = "viewer") -> bool:
+    """Register a new user with a properly hashed password."""
+    from werkzeug.security import generate_password_hash
+    password_hash = generate_password_hash(password)
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO users (username, email, phone, password_hash, role)
+                    VALUES (%s, %s, %s, %s, %s)""",
+                    (username, email or None, phone or None, password_hash, role)
+                )
+                conn.commit()
+                return True
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        return False
+
+def create_user(password: str, username: str, role: str, email: Optional[str] = None, phone: Optional[str] = None) -> bool:
+    """Create a new user, intended for admin use. Reuses register_user logic."""
+    return register_user(password=password, username=username, email=email, phone=phone, role=role)
+
+def get_all_users() -> List[Dict[str, any]]:
+    """Get all users from the database with new fields."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, username, email, phone, role, created_at FROM users ORDER BY created_at DESC"
+            )
+            columns = [desc[0] for desc in cur.description]
+            return [dict(zip(columns, row)) for row in cur.fetchall()]
+# In db.py, find the old reset_user_password and REPLACE it with these two new functions.
+import datetime
+from datetime import timedelta
+
+def store_otp_for_user(identifier: str, otp: str) -> bool:
+    """Stores the OTP and a 10-minute expiration timestamp for the user."""
+    expires_at = datetime.datetime.now() + timedelta(minutes=10)
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """UPDATE users SET otp = %s, otp_expires_at = %s
+                    WHERE username = %s OR email = %s OR phone = %s""",
+                    (otp, expires_at, identifier, identifier, identifier)
+                )
+                conn.commit()
+                return cur.rowcount > 0
+    except Exception as e:
+        logger.error(f"Error storing OTP for user {identifier}: {e}")
+        return False
+
+def validate_otp_and_reset_password(identifier: str, otp: str, new_password: str) -> tuple[bool, str]:
+    """Validates the OTP and resets the password if it's correct and not expired."""
+    user = get_user_by_identifier(identifier)
+    if not user:
+        return False, "User not found."
+
+    if user.get('otp') != otp:
+        return False, "Invalid OTP."
+
+    if user.get('otp_expires_at') and datetime.datetime.now() > user.get('otp_expires_at'):
+        return False, "OTP has expired."
+    
+    from werkzeug.security import generate_password_hash
+    password_hash = generate_password_hash(new_password)
+    
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                # Reset password and clear OTP fields to prevent reuse
+                cur.execute(
+                    """UPDATE users SET password_hash = %s, otp = NULL, otp_expires_at = NULL
+                    WHERE id = %s""",
+                    (password_hash, user['id'])
+                )
+                conn.commit()
+                return (True, "Password reset successfully.") if cur.rowcount > 0 else (False, "Password reset failed.")
+    except Exception as e:
+        logger.error(f"Password reset database error for user {identifier}: {e}")
+        conn.rollback()
+        return False, "A database error occurred."
+
+# Also, update this function in db.py to use the new validate_... function
+# This is a bit of a placeholder now, as the OTP flow is the primary method.
+def reset_user_password(identifier: str, new_password: str) -> bool:
+    """Reset password with proper hashing, finding user by any identifier."""
+    # This function is now mainly for the admin panel reset tool.
+    # The public reset uses the OTP flow.
+    success, message = validate_otp_and_reset_password(identifier, "admin_override", new_password)
+    # The OTP logic in validate... will fail, but the password will be reset anyway
+    # Let's create a simpler direct reset for the admin panel.
+    from werkzeug.security import generate_password_hash
+    password_hash = generate_password_hash(new_password)
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """UPDATE users SET password_hash = %s
+                    WHERE username = %s OR email = %s OR phone = %s""",
+                    (password_hash, identifier, identifier, identifier)
+                )
+                conn.commit()
+                return cur.rowcount > 0
+    except Exception as e:
+        logger.error(f"Password reset error: {str(e)}")
+        return False
+        
+def get_user(username: str) -> Dict:
+    """Get user by username. Legacy support, prefer get_user_by_identifier."""
+    return get_user_by_identifier(username)
+
+def update_user_role(username: str, new_role: str) -> bool:
+    """Update a user's role"""
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET role = %s WHERE username = %s",
+                    (new_role, username)
+                )
+                conn.commit()
+                return cur.rowcount > 0
+    except Exception as e:
+        logger.error(f"Role update failed: {str(e)}")
+        return False
+
+def delete_user(username: str) -> bool:
+    """Permanently delete a user"""
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM users WHERE username = %s",
+                    (username,)
+                )
+                conn.commit()
+                return cur.rowcount > 0
+    except Exception as e:
+        logger.error(f"Delete failed: {str(e)}")
+        return False
+
+def is_username_available(username: str) -> bool:
+    """Check if username is available"""
+    return is_identifier_taken(username=username) is None
+
+def initialize_default_users():
+    """Create default users with hashed passwords if they don't exist."""
+    default_users = {
+        "admin": {"password": "admin123", "email": "admin@example.com"},
+        "editor": {"password": "editor123", "email": "editor@example.com"},
+        "viewer": {"password": "viewer123", "email": "viewer@example.com"}
+    }
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            for username, details in default_users.items():
+                cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
+                if not cur.fetchone():
+                    register_user(
+                        username=username,
+                        password=details["password"],
+                        email=details["email"],
+                        role=username
+                    )
+
+# db.py
+
+# Add these new functions to the end of your db.py file.
+
 def set_form_share_token(form_name: str, token: str) -> bool:
-    """Set share token for a form"""
+    """Set or clear the share token for a form."""
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
@@ -1623,7 +1967,7 @@ def set_form_share_token(form_name: str, token: str) -> bool:
         return False
 
 def get_form_by_token(token: str) -> Optional[Dict]:
-    """Get form metadata by share token"""
+    """Get form metadata by its unique share token."""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -1632,14 +1976,15 @@ def get_form_by_token(token: str) -> Optional[Dict]:
             )
             result = cur.fetchone()
             if result:
+                # The fields are stored as a JSON string, so we need to parse them.
                 return {
                     "form_name": result[0],
-                    "fields": result[1]
+                    "fields": json.loads(result[1]) if isinstance(result[1], str) else result[1]
                 }
             return None
 
 def get_share_token(form_name: str) -> Optional[str]:
-    """Get existing share token for a form"""
+    """Get the existing share token for a form, if it exists."""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
