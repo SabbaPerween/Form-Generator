@@ -95,8 +95,8 @@ Follow these instructions to set up and run the project locally.
 git clone <your-repository-url>
 cd <repository-folder>
 ```
-. git clone ...: This command uses git (a version control system) to download a complete copy of your project's code from its online repository (like GitHub) to the user's local machine.
-. cd ...: This stands for "change directory". It moves the terminal's focus into the newly created project folder so the subsequent commands are run in the correct place.
+* git clone ...: This command uses git (a version control system) to download a complete copy of your project's code from its online repository (like GitHub) to the user's local machine.
+* cd ...: This stands for "change directory". It moves the terminal's focus into the newly created project folder so the subsequent commands are run in the correct place.
 ### 2. Creating a Virtual Environment
 This is a critical best practice in Python development.
 ```bash
