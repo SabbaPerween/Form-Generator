@@ -74,3 +74,19 @@ Security was a primary design consideration.
 The AI integration is designed to assist, not replace, the user.
 *   **Prompt Engineering:** The function `generate_fields_with_llama` in `form_utils.py` uses a carefully engineered prompt. It provides the AI with strict rules, a list of valid field types, and two distinct examples (few-shot prompting). This dramatically increases the reliability and accuracy of the generated JSON output, minimizing the chance of hallucinations or malformed responses.
 *   **Graceful Fallback:** The `enhance_html_with_llama` function includes a `try...except` block. If the LLM call fails for any reason (e.g., Ollama is not running), it gracefully falls back to the deterministic, non-AI function `generate_html_form`, ensuring the application remains functional.
+
+### Update requirements.txt
+Finally, replace the contents of your requirements.txt file with this complete and accurate list of dependencies.
+
+```text
+streamlit
+psycopg2-binary
+python-dotenv
+ollama
+pandas
+werkzeug
+fpdf2
+openpyxl
+plotly
+graphviz
+```
