@@ -1,12 +1,3 @@
-
----
-
-### Step 2: Create `ARCHITECTURE.md` - The Deep Technical Dive
-
-This is what will truly impress a technical lead or senior developer. It shows you understand the *why* behind your code, not just the *what*.
-
-**Action:** Create a new file named `ARCHITECTURE.md` in your project's root directory and add the following content.
-
 ```markdown
 # System Architecture
 
@@ -78,7 +69,7 @@ The AI integration is designed to assist, not replace, the user.
 ### Update requirements.txt
 Finally, replace the contents of your requirements.txt file with this complete and accurate list of dependencies.
 
-```text
+```bash
 streamlit
 psycopg2-binary
 python-dotenv
