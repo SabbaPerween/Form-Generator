@@ -8,10 +8,12 @@ This is a comprehensive web application built with Streamlit that allows users w
 
 ### Table of Contents
 *   [Overview](#overview)
+*   [Project Philosophy](#project-philosophy)
 *   [Core Features](#core-features)
 *   [Technology Stack](#technology-stack)
 *   [System Architecture](#system-architecture)
 *   [Getting Started](#getting-started)
+*   [Troubleshooting](#troubleshooting)
 *   [Usage](#usage)
 *   [Future Work](#future-work)
 *   [License](#license)
@@ -22,8 +24,14 @@ This is a comprehensive web application built with Streamlit that allows users w
 
 This project solves the challenge of creating and managing custom data collection forms in a secure, multi-user environment. It moves beyond static forms by providing a complete lifecycle management tool: from AI-assisted creation and database schema generation to a powerful administrative backend for data filtering, visualization, and export.
 
-**(Suggestion: Add a screenshot or a GIF of the application's dashboard here to make it visually appealing.)**
-`[Screenshot of the Admin Dashboard]`
+## Project Philosophy
+
+The development of this platform is guided by four core principles:
+
+*   **Security First:** Every feature, from authentication to database interaction, is designed with security as the foremost priority. We use industry-standard practices for password hashing, SQL query parameterization, and access control.
+*   **Seamless User Experience:** The interface, powered by Streamlit, is designed to be intuitive for all user roles. Complex actions like database table creation or AI integration are abstracted behind simple UI components.
+*   **Scalable Architecture:** The relational database schema and modular code structure are designed to handle a growing number of forms, submissions, and users without significant refactoring.
+*   **Developer-Friendly & Maintainable:** With a clear separation of concerns (`app.py`, `db.py`, `form_utils.py`), comprehensive documentation, and adherence to best practices, the codebase is easy to understand, maintain, and extend.
 
 ## Core Features
 
@@ -139,6 +147,19 @@ BASE_URL=http://localhost:8501
 streamlit run app.py
 ```
 * This is the final command. It uses the streamlit library (which was just installed) to start a local web server and run your app.py script. It will then print a URL (like http://localhost:8501) that the user can open in their web browser to see and interact with your application.
+
+### 6. Troubleshooting
+
+*   **PostgreSQL Connection Error:** If the app fails to start with a database connection error, double-check that your `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` in the `.env` file are correct and that the PostgreSQL server is running.
+
+*   **`psycopg2` Installation Failure:** If `pip install` fails on `psycopg2-binary`, you may be missing the necessary PostgreSQL development headers.
+    *   On **Debian/Ubuntu**: `sudo apt-get install libpq-dev`
+    *   On **macOS (with Homebrew)**: `brew install postgresql`
+    *   On **Fedora/CentOS**: `sudo dnf install libpq-devel`
+
+*   **Ollama/AI Feature Errors:** If AI features are failing, ensure Ollama is running in the background. You can verify this by opening a new terminal and running `ollama run llama2`.
+
+*   **Password Reset Email Fails:** If you see an `SMTPAuthenticationError`, especially with a Gmail account, it almost certainly means you need to use a 16-digit **App Password**, not your regular account password. Follow Google's instructions to generate one.
 
 # Usage
 1. Navigate to http://localhost:8501 in your web browser.

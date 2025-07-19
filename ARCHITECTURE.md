@@ -27,8 +27,6 @@ The application follows a clear separation of concerns, with each module having 
 
 The PostgreSQL database is the heart of the system. The schema is designed to be relational and scalable.
 
-**(Suggestion: For a top-tier submission, use a tool like dbdiagram.io to create an ERD image from the schema below and embed it here.)**
-`[Entity-Relationship Diagram Image]`
 
 ### Key Tables
 
