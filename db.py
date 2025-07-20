@@ -120,10 +120,6 @@ def initialize_database():
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
         raise
-# In db.py
-
-# <<< --- ADD THIS NEW HELPER FUNCTION --- >>>
-# It's best to place it right before get_parent_forms and get_child_forms
 
 def get_form_name_from_table_name(table_name: str, cursor) -> Optional[str]:
     """
@@ -191,8 +187,6 @@ def delete_child_relationships(relationship_ids: List[int]) -> bool:
         logger.error(f"Error deleting child relationships: {str(e)}")
         conn.rollback()
         return False
-
-# <<< --- ADD THESE TWO NEW FUNCTIONS TO db.py --- >>>
 
 def get_foreign_key_info() -> List[Dict]:
     """
@@ -617,15 +611,6 @@ def get_form_data(form_name):
                         row_dict[col] = row[i]
                 results.append(row_dict)
             return results
-# def get_form_data(form_name):
-#     sanitized_name = form_name.replace(" ", "_").lower()
-#     with get_connection() as conn:
-#         with conn.cursor() as cur:
-#             cur.execute(f"SELECT * FROM {sanitized_name}")
-#             columns = [desc[0] for desc in cur.description]
-#             return [dict(zip(columns, row)) for row in cur.fetchall()]
-        
-#         # Add these functions to db.py
 
 def add_parent_child_relationship(parent_form, child_form):
     """Add a parent-child relationship between forms"""
@@ -658,10 +643,6 @@ def get_child_forms(parent_form_name: str) -> List[str]:
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
-                # This query inspects the database's internal schema to find
-                # tables (children) that have a foreign key referencing the parent table.
-                # ccu.table_name is the table being referenced (the parent).
-                # tc.table_name is the table that has the foreign key (the child).
                 cur.execute("""
                     SELECT
                         tc.table_name AS child_table_name
@@ -678,10 +659,6 @@ def get_child_forms(parent_form_name: str) -> List[str]:
 
                 if not child_table_names:
                     return []
-
-                # Now, we must convert these database-friendly table names back into the
-                # "pretty" form names that the UI uses (e.g., 'Teachers Form').
-                # We use the provided helper function for this conversion.
                 for table_name in child_table_names:
                     pretty_name = get_form_name_from_table_name(table_name, cur)
                     if pretty_name:
@@ -691,23 +668,7 @@ def get_child_forms(parent_form_name: str) -> List[str]:
     except Exception as e:
         logger.error(f"Error getting child forms for '{parent_form_name}': {str(e)}")
         return []
-# def get_parent_forms(child_form):
-#     """Get all parent forms for a given child form"""
-#     with get_connection() as conn:
-#         with conn.cursor() as cur:
-#             sanitized_child = child_form.replace(" ", "_").lower()
-#             cur.execute("""
-#                 SELECT ccu.table_name 
-#                 FROM information_schema.table_constraints tc
-#                 JOIN information_schema.constraint_column_usage ccu
-#                 ON tc.constraint_name = ccu.constraint_name
-#                 WHERE tc.table_name = %s
-#                 AND tc.constraint_type = 'FOREIGN KEY'
-#                 AND tc.constraint_name LIKE 'fk_parent_%%'
-#             """, (sanitized_child,))
-#             return [row[0].replace('_', ' ') for row in cur.fetchall()]
-# # In db.py, find and replace the existing delete_form function
-# This is the NEW, corrected function. Use this in its place.
+
 def get_parent_forms(child_form_name: str) -> List[str]:
     """
     Correctly finds all parent forms for a given child form by inspecting
@@ -719,10 +680,6 @@ def get_parent_forms(child_form_name: str) -> List[str]:
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
-                # This query robustly finds the parent table that the child table's
-                # foreign key points to, without relying on a specific constraint name.
-                # tc.table_name is the child (the table with the constraint).
-                # ccu.table_name is the parent (the table being referenced).
                 cur.execute("""
                     SELECT
                         ccu.table_name AS parent_table_name
@@ -1483,8 +1440,6 @@ def dump_all_foreign_keys() -> List[Dict]:
         return [{"error": str(e)}]
     
 # In db.py
-
-# <<< --- ADD THIS NEW FUNCTION TO THE END OF db.py --- >>>
 def fix_form_name_discrepancies() -> List[str]:
     """
     Finds and corrects discrepancies between the 'forms' metadata table
@@ -1567,15 +1522,9 @@ def find_orphan_form_records() -> List[Dict[str, str]]:
                 }
                 # Filter out None values in case of conversion failure
                 actual_tables = {name for name in actual_tables if name}
-
-                # Find metadata forms that don't have a corresponding real table
-                # This logic is a bit tricky. We need to check if the metadata_form's
-                # sanitized name exists in the list of real tables.
-                
                 # Let's re-do this logic more simply.
                 cur.execute("SELECT form_name FROM forms")
                 metadata_forms = cur.fetchall()
-
                 for (form_name,) in metadata_forms:
                     sanitized_name = form_name.replace(" ", "_").lower()
                     cur.execute("""
@@ -1654,48 +1603,6 @@ def link_child_to_parent(child_form_name: str, parent_form_name: str) -> tuple[b
         logger.error(message)
         return (False, message)
     
-# def set_form_share_token(form_name: str, token: str) -> bool:
-#     """Set share token for a form"""
-#     try:
-#         with get_connection() as conn:
-#             with conn.cursor() as cur:
-#                 cur.execute(
-#                     "UPDATE forms SET share_token = %s WHERE form_name = %s",
-#                     (token, form_name)
-#                 )
-#                 conn.commit()
-#                 return True
-#     except Exception as e:
-#         logger.error(f"Error setting share token: {str(e)}")
-#         return False
-
-# def get_form_by_token(token: str) -> Optional[Dict]:
-#     """Get form metadata by share token"""
-#     with get_connection() as conn:
-#         with conn.cursor() as cur:
-#             cur.execute(
-#                 "SELECT form_name, fields FROM forms WHERE share_token = %s",
-#                 (token,)
-#             )
-#             result = cur.fetchone()
-#             if result:
-#                 return {
-#                     "form_name": result[0],
-#                     "fields": result[1]
-#                 }
-#             return None
-
-# def get_share_token(form_name: str) -> Optional[str]:
-#     """Get existing share token for a form"""
-#     with get_connection() as conn:
-#         with conn.cursor() as cur:
-#             cur.execute(
-#                 "SELECT share_token FROM forms WHERE form_name = %s",
-#                 (form_name,)
-#             )
-#             result = cur.fetchone()
-#             return result[0] if result else None
-        
 
 def get_user_by_identifier(identifier: str) -> Optional[Dict]:
     """
@@ -1714,8 +1621,8 @@ def get_user_by_identifier(identifier: str) -> Optional[Dict]:
             # It also selects the otp and otp_expires_at columns.
             cur.execute(
                 """SELECT id, username, email, phone, password_hash, role, otp, otp_expires_at
-                   FROM users
-                   WHERE LOWER(username) = %s OR LOWER(email) = %s OR LOWER(phone) = %s""",
+                FROM users
+                WHERE LOWER(username) = %s OR LOWER(email) = %s OR LOWER(phone) = %s""",
                 (normalized_identifier, normalized_identifier, normalized_identifier)
             )
             result = cur.fetchone()
@@ -1732,13 +1639,9 @@ def get_user_by_identifier(identifier: str) -> Optional[Dict]:
                 }
             return None
 
-# Also in db.py, find the existing store_otp_for_user function and REPLACE it.
-
 def store_otp_for_user(identifier: str, otp: str) -> bool:
     """Stores the OTP for the user, finding them with a CASE-INSENSITIVE search."""
     expires_at = datetime.datetime.now() + timedelta(minutes=10)
-    
-    # Normalize the input to be lowercase and without leading/trailing whitespace.
     normalized_identifier = identifier.strip().lower()
 
     try:
@@ -1865,8 +1768,6 @@ def validate_otp_and_reset_password(identifier: str, otp: str, new_password: str
         conn.rollback()
         return False, "A database error occurred."
 
-# Also, update this function in db.py to use the new validate_... function
-# This is a bit of a placeholder now, as the OTP flow is the primary method.
 def reset_user_password(identifier: str, new_password: str) -> bool:
     """Reset password with proper hashing, finding user by any identifier."""
     # This function is now mainly for the admin panel reset tool.
@@ -1948,10 +1849,6 @@ def initialize_default_users():
                         role=username
                     )
 
-# db.py
-
-# Add these new functions to the end of your db.py file.
-
 def set_form_share_token(form_name: str, token: str) -> bool:
     """Set or clear the share token for a form."""
     try:
@@ -1995,8 +1892,6 @@ def get_share_token(form_name: str) -> Optional[str]:
             result = cur.fetchone()
             return result[0] if result else None
         
-# Add this new function to db.py
-
 def create_form_and_table(form_name: str, fields: List[Dict], user_id: Optional[int]) -> tuple[bool, str]:
     """
     Atomically creates the form metadata and its corresponding data table in a single transaction.

@@ -195,18 +195,18 @@ Based on the user's request, generate a JSON array of field objects.
 User Request: "A contact form with name, email, and a message."
 Your Output:
 [
-  {{"name": "Name", "type": "VARCHAR(255)"}},
-  {{"name": "Email", "type": "EMAIL"}},
-  {{"name": "Message", "type": "TEXTAREA"}}
+    {{"name": "Name", "type": "VARCHAR(255)"}},
+    {{"name": "Email", "type": "EMAIL"}},
+    {{"name": "Message", "type": "TEXTAREA"}}
 ]
 
 **EXAMPLE 2:**
 User Request: "Student survey with student name, their grade from 1 to 12, and their favorite subject (Math, Science, History, Art)."
 Your Output:
 [
-  {{"name": "Student Name", "type": "VARCHAR(255)"}},
-  {{"name": "Grade", "type": "INTEGER"}},
-  {{"name": "Favorite Subject", "type": "RADIO", "options": ["Math", "Science", "History", "Art"]}}
+    {{"name": "Student Name", "type": "VARCHAR(255)"}},
+    {{"name": "Grade", "type": "INTEGER"}},
+    {{"name": "Favorite Subject", "type": "RADIO", "options": ["Math", "Science", "History", "Art"]}}
 ]
 
 ---
@@ -318,22 +318,7 @@ def generate_fallback_form(fields):
     form_html += '  <button type="submit" class="btn btn-primary">Submit</button>\n'
     form_html += '</form>'
     return form_html
-# Corrected function in form_utils.py
 
-# def generate_embed_code(form_name: str, token: str, base_url: str) -> str:
-#     """Generate HTML embed code for a form"""
-#     # Use the corrected URL structure (base_url + ?token=...)
-#     embed_url = f"{base_url}?token={token}"
-#     return f"""
-#     <iframe 
-#         src="{embed_url}" 
-#         title="{form_name}"
-#         width="100%" 
-#         height="600px"
-#         frameborder="0"
-#         style="border: 1px solid #ddd; border-radius: 5px;"
-#     ></iframe>
-#     """
 def generate_embed_code(form_name: str, token: str, base_url: str) -> str:
     """Generate HTML embed code (iframe) for a form."""
     # The URL for the iframe's src attribute must include the token parameter
@@ -394,8 +379,6 @@ def get_html_input(field):
                 </div>
                 '''
             return html
-        
-        # Add similar blocks for other field types...
         
         # Default text input
         return f'<input type="text" class="form-control" name="{field_name}" {required}>'

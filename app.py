@@ -1,5 +1,4 @@
 # This Python code is a Streamlit web application that allows users to create dynamic forms, fill out
-# those forms, and view the submitted data. Here is a breakdown of the main functionalities:
 
 import streamlit as st
 from db import *
@@ -89,11 +88,6 @@ else:
         st.session_state.page = "Authentication"
 
     initialize_default_users()
-# query_params = st.experimental_get_query_params()
-
-# if st.session_state.user is None and 'token' in st.query_params:
-#     st.session_state.page = "Shared Form"
-# Near the top of your script with other session state initializations
 
 # Role definitions
 ROLES = {
@@ -334,20 +328,14 @@ elif st.session_state.page == "Form Creation":
         key="form_name")
     existing_forms = [f for f in get_all_forms() if f != form_name and form_name not in get_child_forms(f)]
     
-    # --- START OF FIX ---
-    
     parent_form = "" # Default to an empty string, meaning no parent is selected.
 
     if existing_forms:
-        # The selectbox will return an empty string "" if the user chooses the first blank option.
-        # This correctly represents "no parent selected".
         parent_form = st.selectbox(
             "Link to Parent Form (optional)", 
             [""] + existing_forms
         )
     else:
-        # When no forms exist, we simply show a disabled input or nothing at all.
-        # The 'parent_form' variable remains an empty string.
         st.text_input("Link to Parent Form (optional)", "No parent forms available", disabled=True)
     
     # Reset fields if form name changes
@@ -450,7 +438,7 @@ elif st.session_state.page == "Form Creation":
                 if st.button("❌ Remove", key=f"remove_{i}"):
                     st.session_state.fields.pop(i)
                     st.rerun()
-    # NEW, IMPROVED CODE
+    
 # In the "Generate Form" button section
     if st.button("🚀 Generate Form Instantly", type="primary"):
         if form_name and st.session_state.fields:
@@ -468,7 +456,6 @@ elif st.session_state.page == "Form Creation":
                     st.error("Failed to create the database table for the form.")
                     st.stop()
                     
-                # --- FASTER GENERATION ---
                 # Use the new, instant HTML generator by default
                 html_content = generate_html_form(form_name, st.session_state.fields)
                 filepath = save_form_html(form_name, html_content)
@@ -572,482 +559,6 @@ elif st.session_state.page == "Form Creation":
                     
                     # Rerun to apply the page change
                     st.rerun()
-    
-    
-# # Form Filling Page
-# elif st.session_state.page == "Form Filling":
-#     st.title("Fill Form")
-#     check_access("view")
-    
-#     # Initialize tab management
-#     if 'form_tabs' not in st.session_state:
-#         st.session_state.form_tabs = []
-#         st.session_state.active_tab = None
-    
-#     # Tab management UI
-#     st.subheader("Open Forms")
-    
-#     # Create columns for tabs + new tab button
-#     tab_cols = st.columns([8, 1])
-    
-#     with tab_cols[0]:
-#         # Show existing tabs
-#         if st.session_state.form_tabs:
-#             tab_titles = [f"Form {i+1}: {tab['form_name']}" for i, tab in enumerate(st.session_state.form_tabs)]
-#             selected_tab_idx = st.radio(
-#                 "Active Tab",
-#                 range(len(st.session_state.form_tabs)),
-#                 format_func=lambda i: tab_titles[i],
-#                 horizontal=True,
-#                 label_visibility="collapsed"
-#             )
-#             st.session_state.active_tab = selected_tab_idx
-            
-#     with tab_cols[1]:
-#         if st.button("+ New", help="Open new form tab"):
-#             # Add new empty tab
-#             st.session_state.form_tabs.append({
-#                 "form_name": "",
-#                 "fields": None,
-#                 "form_data": {},
-#                 "parent_id": None
-#             })
-#             st.session_state.active_tab = len(st.session_state.form_tabs) - 1
-#             st.rerun()
-    
-#     # Close tab button
-#     if st.session_state.form_tabs:
-#         if st.button("✕ Close", help="Close current tab"):
-#             if st.session_state.active_tab is not None:
-#                 st.session_state.form_tabs.pop(st.session_state.active_tab)
-#                 if st.session_state.form_tabs:
-#                     st.session_state.active_tab = min(st.session_state.active_tab, len(st.session_state.form_tabs)-1)
-#                 else:
-#                     st.session_state.active_tab = None
-#                 st.rerun()
-    
-#     # Main form area
-#     if st.session_state.active_tab is not None:
-#         tab_data = st.session_state.form_tabs[st.session_state.active_tab]
-        
-#         # Form selection for the active tab
-#         forms = get_all_forms()
-#         form_name = st.selectbox(
-#             "Select Form", 
-#             forms,
-#             index=forms.index(tab_data["form_name"]) if tab_data["form_name"] in forms else 0,
-#             key=f"form_select_{st.session_state.active_tab}"
-#         )
-        
-#         # Update tab when form changes
-#         if form_name != tab_data["form_name"]:
-#             tab_data["form_name"] = form_name
-#             tab_data["fields"] = get_form_fields(form_name)
-#             tab_data["form_data"] = {}
-#             tab_data["parent_id"] = None  # Reset parent ID when form changes
-#             st.rerun()
-        
-#         # Only proceed if form is selected
-#         if form_name:
-#             tab_data["fields"] = tab_data["fields"] or get_form_fields(form_name)
-#             fields = tab_data["fields"]
-            
-#             # Validate fields structure
-#             if not fields or not isinstance(fields, list):
-#                 st.error("Invalid form fields configuration")
-#                 st.stop()
-                
-#             st.subheader(f"Fill {form_name}")
-            
-#             # Parent form handling - improved version
-#             parent_id = tab_data["parent_id"]
-#             parent_form = None
-            
-#             # Only try to get parent forms if we have a form_name selected
-#             if form_name:
-#                 parent_forms = get_parent_forms(form_name)
-#                 if parent_forms and isinstance(parent_forms, list) and len(parent_forms) > 0:
-#                     parent_form = parent_forms[0]
-#                     parent_records = get_form_data(parent_form) if parent_form else []
-                    
-#                     if parent_records:
-#                         parent_options = {f"ID: {r['id']} - {r.get('name', '')}"[:50]: r['id'] for r in parent_records}
-#                         selected_parent = st.selectbox(
-#                             f"Select {parent_form} record", 
-#                             options=list(parent_options.keys()),
-#                             key=f"parent_select_{st.session_state.active_tab}"
-#                         )
-#                         parent_id = parent_options[selected_parent]
-#                         tab_data["parent_id"] = parent_id
-#                     else:
-#                         st.warning(f"No {parent_form} records available. Please create one first.")
-#                         st.stop()
-            
-#             # Use a form context to prevent partial submissions
-#             with st.form(key=f"form_{form_name}_{st.session_state.active_tab}"):
-#                 form_data = {}
-#                 validation_errors = []
-                
-#                 # Render form fields with enhanced validation
-#                 for i, field in enumerate(fields):
-#                     try:
-#                         # Validate field structure
-#                         if not isinstance(field, dict):
-#                             st.error(f"Invalid field at position {i}: Expected dict, got {type(field)}")
-#                             continue
-                            
-#                         # Validate field name
-#                         if "name" not in field:
-#                             st.error(f"Field at position {i} is missing 'name' property")
-#                             continue
-                            
-#                         field_name = field["name"]
-#                         if not isinstance(field_name, str):
-#                             st.error(f"Field name at position {i} must be string, got {type(field_name)}")
-#                             continue
-                            
-#                         field_name = field_name.strip()
-#                         if not field_name:
-#                             st.error(f"Field name at position {i} is empty")
-#                             continue
-                            
-#                         # Get field type with default
-#                         field_type = field.get("type", "TEXT")
-#                         if not isinstance(field_type, str):
-#                             st.error(f"Field type at position {i} must be string, got {type(field_type)}")
-#                             continue
-                            
-#                         # Handle different field types
-#                         if field_type == "TEXTAREA":
-#                             form_data[field_name] = st.text_area(field_name)
-                        
-#                         elif field_type == "PASSWORD":
-#                             form_data[field_name] = st.text_input(field_name, type="password")
-                        
-#                         elif field_type == "CHECKBOX":
-#                             if "options" in field:
-#                                 selected = []
-#                                 for option in field["options"]:
-#                                     if st.checkbox(f"{field_name} - {option}", key=f"checkbox_{field_name}_{option}_{i}"):
-#                                         selected.append(option)
-#                                 form_data[field_name] = ", ".join(selected) if selected else None
-                        
-#                         elif field_type == "RADIO":
-#                             if "options" in field:
-#                                 form_data[field_name] = st.radio(field_name, field["options"], key=f"radio_{field_name}_{i}")
-                        
-#                         elif field_type == "SELECT":
-#                             if "options" in field:
-#                                 form_data[field_name] = st.selectbox(field_name, field["options"], key=f"select_{field_name}_{i}")
-                        
-#                         elif field_type == "DATETIME":
-#                             col1, col2 = st.columns(2)
-#                             with col1:
-#                                 date_value = st.date_input(f"{field_name} (date)", key=f"date_{field_name}_{i}")
-#                             with col2:
-#                                 time_value = st.time_input(f"{field_name} (time)", key=f"time_{field_name}_{i}")
-                            
-#                             # Combine date and time into a datetime string
-#                             if date_value and time_value:
-#                                 form_data[field_name] = f"{date_value} {time_value}"
-#                             else:
-#                                 form_data[field_name] = None
-#                         elif field_type == "TIME":
-#                             form_data[field_name] = st.time_input(field_name, key=f"time_{field_name}_{i}")
-                        
-#                         elif field_type == "MULTISELECT":
-#                             if "options" in field:
-#                                 form_data[field_name] = st.multiselect(field_name, field["options"], key=f"multiselect_{field_name}_{i}")
-                        
-#                         elif field_type == "EMAIL":
-#                             email = st.text_input(field_name, key=f"email_{field_name}_{i}")
-#                             if email and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-#                                 validation_errors.append(f"{field_name} must be a valid email address")
-#                             form_data[field_name] = email
-                        
-#                         elif field_type == "URL":
-#                             url = st.text_input(field_name, key=f"url_{field_name}_{i}")
-#                             if url and not re.match(r"https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+", url):
-#                                 validation_errors.append(f"{field_name} must be a valid URL")
-#                             form_data[field_name] = url
-                        
-#                         elif field_type == "COLOR":
-#                             form_data[field_name] = st.color_picker(field_name, key=f"color_{field_name}_{i}")
-                        
-#                         elif field_type == "FILE":
-#                             form_data[field_name] = st.file_uploader(field_name, key=f"file_{field_name}_{i}")
-                        
-#                         elif field_type == "RANGE":
-#                             min_val, max_val = 0, 100  # Default range
-#                             if "options" in field and len(field["options"]) >= 2:
-#                                 try:
-#                                     min_val = float(field["options"][0])
-#                                     max_val = float(field["options"][1])
-#                                 except ValueError:
-#                                     pass
-#                             form_data[field_name] = st.slider(field_name, min_val, max_val, key=f"slider_{field_name}_{i}")
-                        
-#                         # Handle original field types
-#                         elif field_name.lower() == "gender":
-#                             options = ["Male", "Female", "Other", "Prefer not to say"]
-#                             form_data[field_name] = st.selectbox(field_name, options, key=f"gender_{i}")
-                        
-#                         elif field_type == "PHONE":
-#                             phone = st.text_input(field_name, key=f"phone_{field_name}_{i}")
-#                             if phone and (not phone.isdigit() or len(phone) != 10):
-#                                 validation_errors.append(f"{field_name} must be a 10-digit number")
-#                             form_data[field_name] = phone
-                        
-#                         elif "VARCHAR" in field_type or "TEXT" in field_type:
-#                             form_data[field_name] = st.text_input(field_name, key=f"text_{field_name}_{i}")
-                        
-#                         elif "INT" in field_type:
-#                             form_data[field_name] = st.number_input(field_name, step=1, key=f"int_{field_name}_{i}")
-                        
-#                         elif "FLOAT" in field_type:
-#                             form_data[field_name] = st.number_input(field_name, step=0.1, key=f"float_{field_name}_{i}")
-                        
-#                         elif "DATE" in field_type:
-#                             min_date = datetime.date(1800, 1, 1)
-#                             max_date = datetime.date.today()
-#                             form_data[field_name] = st.date_input(
-#                                 field_name,
-#                                 min_value=min_date,
-#                                 max_value=max_date,
-#                                 key=f"date_{field_name}_{i}"
-#                             )
-                        
-#                         elif "BOOLEAN" in field_type:
-#                             form_data[field_name] = st.checkbox(field_name, key=f"checkbox_{field_name}_{i}")
-                    
-#                     except Exception as e:
-#                         st.error(f"Error rendering field {i}: {str(e)}")
-#                         logger.exception(f"Error rendering field {i}")
-                
-#                 # Display validation errors
-#                 for error in validation_errors:
-#                     st.error(error)
-                
-#                 tab_data["form_data"] = form_data
-                
-#                 # Submit button inside the form context
-#                 submitted = st.form_submit_button("Submit Form")
-                
-#             if submitted and not validation_errors:
-                    
-#                 try:
-#                     # Check if form has valid data
-#                     has_data = False
-#                     for value in form_data.values():
-#                         if value not in (None, "", [], [""]):
-#                             has_data = True
-#                             break
-                        
-#                     if not has_data:
-#                         st.error("Please fill in at least one field")
-#                         st.stop()
-#                     # First, validate we have actual data to save
-#                     if not form_data or all(v in (None, "", [], {}) for v in form_data.values()):
-#                         st.error("Please fill in at least one field")
-#                         st.stop()
-#                     # Convert data types before submission
-#                     processed_data = {}
-#                     field_errors = []
-                        
-#                     for i, field in enumerate(fields):
-#                         try:
-#                             # Skip if field is invalid
-#                             if not isinstance(field, dict) or "name" not in field:
-#                                 continue
-                                    
-#                             field_name = field["name"]
-#                             if not isinstance(field_name, str) or not field_name.strip():
-#                                 continue
-                                    
-#                             # Normalize field name
-#                             normalized_name = field_name.strip().replace(" ", "_").lower()
-                                
-#                             # Skip id field
-#                             if normalized_name == "id":
-#                                 continue
-                                
-#                             # Skip if field not in form data
-#                             if field_name not in form_data:
-#                                 continue
-                                    
-#                             value = form_data[field_name]
-                                
-#                             # Skip empty values
-#                             if value in (None, "", [], [""]):
-#                                 if field.get("required"):
-#                                     field_errors.append(f"{field_name} is required")
-#                                 continue
-                                
-#                             # Get field type with default
-#                             field_type = field.get("type", "TEXT")
-                                
-#                             # Type conversions
-#                             if field_type == "BOOLEAN":
-#                                 processed_data[normalized_name] = bool(value) if not isinstance(value, str) else value.lower() in ('true', 't', 'yes', 'y', '1', 'on')
-                                
-#                             elif field_type in ["CHECKBOX", "MULTISELECT"]:
-#                                 if isinstance(value, str):
-#                                     processed_data[normalized_name] = [v.strip() for v in value.split(',') if v.strip()]
-#                                 elif isinstance(value, (list, tuple)):
-#                                     processed_data[normalized_name] = list(value)
-#                                 else:
-#                                     processed_data[normalized_name] = [str(value)]
-                                
-#                             elif field_type in ["DATE", "DATETIME", "TIME"]:
-#                                 if hasattr(value, 'isoformat'):
-#                                     if isinstance(value, datetime.time):
-#                                         processed_data[normalized_name] = value.strftime("%H:%M:%S")
-#                                     elif isinstance(value, datetime.datetime):
-#                                         processed_data[normalized_name] = value.strftime("%Y-%m-%d %H:%M:%S")
-#                                     else:  # date
-#                                         processed_data[normalized_name] = value.isoformat()
-#                                 else:
-#                                     processed_data[normalized_name] = value
-#                             elif field_type == "INTEGER":
-#                                 try:
-#                                     processed_data[normalized_name] = int(float(value)) if value else None
-#                                 except (ValueError, TypeError):
-#                                     field_errors.append(f"Invalid integer value for {field_name}")
-                                
-#                             elif field_type == "FLOAT":
-#                                 try:
-#                                     processed_data[normalized_name] = float(value) if value else None
-#                                 except (ValueError, TypeError):
-#                                     field_errors.append(f"Invalid number for {field_name}")
-#                             else:
-#                                 processed_data[normalized_name] = value
-                            
-#                         except Exception as e:
-#                             logger.exception(f"Error processing field {i} ({field_name})")
-#                             field_errors.append(f"Error processing {field_name}: {str(e)}")
-                        
-#                     # Show field errors if any
-#                     if field_errors:
-#                         for error in field_errors:
-#                             st.error(error)
-#                         st.stop()
-                        
-#                     # Handle parent-child relationship - safer version
-#                     if parent_id and parent_form:  # Only check if we have both
-#                         if not record_exists(parent_form, parent_id):
-#                             st.error(f"The selected {parent_form} record (ID: {parent_id}) no longer exists")
-#                             st.stop()
-#                         processed_data['parent_id'] = parent_id
-                        
-#                     # Debug preview for admins
-#                     if st.session_state.user.get('role') == 'admin':
-#                         with st.expander("Debug Preview"):
-#                             st.write("Data to save:", processed_data)
-#                             st.write("Fields structure:", fields)
-#                             try:
-#                                 debug_info = debug_save_operation(form_name, processed_data)
-#                                 st.write("Table exists:", debug_info["table_exists"])
-#                                 st.write("Columns:", debug_info["columns"])
-#                                 st.write("Constraints:", debug_info["constraints"])
-#                             except Exception as e:
-#                                 st.error(f"Debug error: {str(e)}")
-                        
-#                     # Check if we have data to save
-#                     if not processed_data:
-#                         st.error("No data to save. Please fill in at least one field.")
-#                         st.stop()
-                            
-#                     # Schema synchronization
-#                     if not synchronize_form_table(form_name):
-#                         st.error("Database schema out of sync. Please try again.")
-#                         st.stop()
-#                     # Get form data
-#                     form_data = get_form_data(form_name)  # Your function to collect form data
-                        
-#                     # Check if we already processed this submission
-#                     current_hash = hashlib.md5(str(form_data).encode()).hexdigest()
-                        
-#                     if 'last_submission_hash' in st.session_state:
-#                         if st.session_state.last_submission_hash == current_hash:
-#                             st.warning("This submission has already been processed")
-#                             st.stop()
-#                     # Save data
-#                     if save_form_data(form_name, processed_data):
-#                         st.success("✅ Form submitted successfully!")
-#                         # Reset form data but keep the tab open
-#                         tab_data["form_data"] = {}
-#                         st.balloons()
-#                     else:
-#                         st.error("""
-#                         Failed to save form data. Possible reasons:
-#                         1. Data type mismatch
-#                         2. Missing required fields
-#                         3. Database constraints violated
-#                         """)
-                            
-#                         # Show detailed error for admins
-#                         if st.session_state.user.get('role') == 'admin':
-#                             with st.expander("Technical Details"):
-#                                 try:
-#                                     debug_info = debug_save_operation(form_name, processed_data)
-#                                     st.write("Debug Info:", debug_info)
-#                                 except Exception as e:
-#                                     st.error(f"Debug error: {str(e)}")
-                                    
-#                                 if st.button("Force Table Repair", key=f"repair_{form_name}_{st.session_state.active_tab}"):
-#                                     if synchronize_form_table(form_name):
-#                                         st.success("Table repair complete! Please try submitting again.")
-#                                     st.rerun()
-#                                 else:
-#                                     st.error("Table repair failed.")
-                    
-#                 except Exception as e:
-#                     st.error(f"Submission error: {str(e)}")
-#                     logger.exception("Form submission failed")
-#                     # Add detailed traceback for admins
-#                     if st.session_state.user.get('role') == 'admin':
-#                         with st.expander("Technical Details"):
-#                             st.write("Form data:", form_data)
-#                             st.write("Processed data:", processed_data)
-#                             st.write("Fields:", fields)
-#                             st.write("Full error traceback:")
-#                             st.exception(e)
-#             st.markdown("---")
-#             with st.expander("🚀 Share or Embed this Form"):
-#                 # Ensure a form is selected before showing share options
-#                 if form_name:
-#                     # Get the token from the database if it exists
-#                     if 'share_token' not in st.session_state or st.session_state.get('current_form_for_token') != form_name:
-#                         st.session_state.share_token = get_share_token(form_name)
-#                         st.session_state.current_form_for_token = form_name
-
-#                     if st.button("Generate Sharable Link", key=f"share_{form_name}"):
-#                         import uuid
-#                         new_token = str(uuid.uuid4())
-#                         if set_form_share_token(form_name, new_token):
-#                             st.session_state.share_token = new_token
-#                             st.success("Share link created successfully!")
-#                             st.rerun()
-#                         else:
-#                             st.error("Failed to create share token.")
-
-#                     if st.session_state.get('share_token'):
-#                         base_url = os.getenv("BASE_URL", "http://localhost:8501")
-#                         share_url = f"{base_url}?token={st.session_state.share_token}"
-                        
-#                         st.success("This form is public. Anyone with the link can view and submit it.")
-#                         st.text_input("Sharable Link (Copy this)", share_url, key=f"share_url_{form_name}")
-                        
-#                         embed_code = generate_embed_code(form_name, st.session_state.share_token, base_url)
-#                         st.code(embed_code, language="html")
-                        
-#                         if st.button("Revoke Share Link", type="primary", key=f"revoke_{form_name}"):
-#                             if set_form_share_token(form_name, None): # Set token to NULL
-#                                 st.session_state.share_token = None
-#                                 st.success("Access revoked!")
-#                                 st.rerun()
-#                 else:
-#                     st.info("Select a form from the dropdown above to get sharing options.")
 # Form Filling Page
 elif st.session_state.page == "Form Filling":
     st.title("Fill Form")
@@ -1138,33 +649,24 @@ elif st.session_state.page == "Form Filling":
                 else:
                     st.warning(f"No {parent_form} records available. Please create one first.")
                     st.stop()
-
-            # --- START OF THE CRITICAL FIX ---
             # The entire submission logic is now INSIDE the `with st.form` block.
-            
             with st.form(key=f"form_{form_name}_{st.session_state.active_tab}"):
                 form_data = {}
                 validation_errors = []
                 
                 # Render form fields (this part is unchanged)
                 for i, field in enumerate(fields):
-                    # (All your widget rendering logic like st.text_input, st.selectbox, etc. stays here)
-                    # This part of the code is correct and does not need to be changed.
-                    # For brevity, I am omitting the 40+ lines of widget rendering.
-                    # The original logic for rendering fields is kept.
                     try:
                         field_name = field["name"]
                         field_type = field.get("type", "TEXT")
-                        # (omitting the large block of if/elif for different field types for clarity)
-                        # ...
+                        
                         if field_type == "TEXTAREA":
                             form_data[field_name] = st.text_area(field_name)
                         elif "VARCHAR" in field_type or "TEXT" in field_type:
                             form_data[field_name] = st.text_input(field_name, key=f"text_{field_name}_{i}")
-                        # ... and so on for all other field types.
-                        # The code for rendering all your widgets remains exactly as it was.
+                        
                         else: # A fallback
-                             form_data[field_name] = st.text_input(field_name, key=f"text_{field_name}_{i}")
+                            form_data[field_name] = st.text_input(field_name, key=f"text_{field_name}_{i}")
                     except Exception as e:
                         st.error(f"Error rendering field {field_name}: {e}")
 
@@ -1191,18 +693,14 @@ elif st.session_state.page == "Form Filling":
 
                         normalized_name = field_name.strip().replace(" ", "_").lower()
                         field_type = field.get("type", "TEXT")
-
-                        # (omitting the large block of data type conversion for clarity)
-                        # The original logic for processing data types is kept.
                         if field_type == "INTEGER":
-                             try:
+                            try:
                                 processed_data[normalized_name] = int(float(value)) if value else None
-                             except (ValueError, TypeError):
+                            except (ValueError, TypeError):
                                 field_errors.append(f"Invalid integer for {field_name}")
                         # ... and so on for all other conversions
                         else:
                             processed_data[normalized_name] = value
-
                     if field_errors:
                         for error in field_errors:
                             st.error(error)
@@ -1229,9 +727,6 @@ elif st.session_state.page == "Form Filling":
                         # No st.rerun() needed here, balloons and success message are enough.
                     else:
                         st.error("Failed to save form data. Please check for database errors or constraints.")
-
-            # --- END OF THE CRITICAL FIX ---
-
             st.markdown("---")
             with st.expander("🚀 Share or Embed this Form"):
                 if form_name:
@@ -1356,7 +851,6 @@ elif st.session_state.page == "Admin View":
                 
             # Convert to DataFrame for filtering
             df = pd.DataFrame(data).fillna('')
-            
             # Create dynamic filters based on column names
             st.subheader("Filters")
             
@@ -1489,7 +983,6 @@ elif st.session_state.page == "Admin View":
                         # Clear parent context if "All" is selected
                         tab.pop('parent_id', None)
                         tab.pop('parent_form', None)
-            
             # ========================================================= #
             # <<< --- START: NEW CHILD-TO-CHILD RELATIONSHIP CODE --- >>> #
             # ========================================================= #
@@ -1626,24 +1119,18 @@ elif st.session_state.page == "Admin View":
                                         dot.node(target_node_id, f"{rel['child_form2']}\n(ID: {rel['record_id2']})")
                                         dot.edge(f"P_{parent_id}", target_node_id, style='dashed', arrowhead='none')
                                         added_nodes.add(target_node_id)
-
                                     # Add the relationship edge
                                     dot.edge(source_node_id, target_node_id, label=rel['relationship_type'])
-
                                 st.graphviz_chart(dot)
-
                             except ImportError:
                                 st.warning("Please install the 'graphviz' library to see visualizations: `pip install graphviz`")
                             except Exception as e:
                                 st.error(f"Could not generate visualization: {e}")
-
                 else:
                     st.info("To establish relationships, the parent form must have at least two different child forms linked to it.")
-
             # ======================================================= #
             # <<< --- END: NEW CHILD-TO-CHILD RELATIONSHIP CODE --- >>> #
             # ======================================================= #
-
             # Display data
             st.subheader(f"Submission Data for {form_name}")
             
@@ -1659,7 +1146,6 @@ elif st.session_state.page == "Admin View":
                 use_container_width=True,
                 key=f"data_editor_{st.session_state.active_admin_tab}"
             )
-            
             # Get selected rows for deletion
             selected_rows = edited_df[edited_df.Select]
             
@@ -1888,21 +1374,12 @@ elif st.session_state.page == "Admin View":
                     )
                 except Exception as e:
                     st.error(f"Excel generation failed: {e}")                
-            # # Add download button
-            # csv = filtered_df.drop(columns=['Select']).to_csv(index=False).encode('utf-8')
-            # st.download_button(
-            #     "Download CSV",
-            #     csv,
-            #     f"{form_name.replace(' ', '_')}_data.csv",
-            #     "text/csv",
-            #     key=f'download-csv-{st.session_state.active_admin_tab}'
-            # )
+            
     else:
         st.info("No analysis tabs open. Click '+ New' to start.")
-
+        
 elif st.session_state.page == "User Management":
     st.title("User Management")
-    
     if not st.session_state.user or "admin" not in st.session_state.user["permissions"]:
         st.error("🔒 Administrator privileges required")
         st.stop()
@@ -1939,7 +1416,6 @@ elif st.session_state.page == "User Management":
                         st.rerun()
                     else:
                         st.error("User creation failed.")
-
     with tab2:
         st.subheader("Existing Users")
         users = get_all_users()
@@ -1993,7 +1469,6 @@ elif st.session_state.page == "User Management":
                             st.rerun()
                         else:
                             st.error("Deletion failed.")
-
     with tab3:
         st.subheader("Password Reset Tool")
         all_users = get_all_users()
@@ -2015,7 +1490,6 @@ elif st.session_state.page == "User Management":
     with tab4:
         st.subheader("Form Relationship Health Check")
         st.info("Use this tool to find and fix broken parent-child form links.")
-
         if st.button("Check Form Health"):
             health_report = get_foreign_key_info()
             st.session_state.health_report = health_report
@@ -2027,11 +1501,9 @@ elif st.session_state.page == "User Management":
             else:
                 st.markdown("---")
                 all_forms = [f['form_name'] for f in report]
-
                 for item in report:
                     status = item['status']
                     form_name = item['form_name']
-
                     if status == 'OK':
                         st.success(f"✅ **{form_name}**: OK (Linked to **{item['linked_to']}**)")
                     elif status == 'Broken Link':
@@ -2049,15 +1521,12 @@ elif st.session_state.page == "User Management":
                                     st.rerun()
                                 else:
                                     st.error("Repair failed. Check the application logs for details.")
-
                     elif status == 'Parent':
                         st.info(f"ℹ️ **{form_name}**: Parent Form (or has no parent link)")
         st.subheader("System Health and Cleanup")
         st.info("This tool helps find and fix inconsistencies in your form data, such as 'orphan' form records where the metadata exists but the data table is missing.")
-
         if st.button("🔍 Scan for Orphan Records"):
             st.session_state.orphan_records = find_orphan_form_records()
-
         if 'orphan_records' in st.session_state:
             orphans = st.session_state.orphan_records
             if not orphans:
@@ -2067,7 +1536,6 @@ elif st.session_state.page == "User Management":
                 
                 df = pd.DataFrame(orphans)
                 st.dataframe(df, use_container_width=True)
-
                 st.markdown("---")
                 st.subheader("Clean Up Orphan Records")
                 
@@ -2075,7 +1543,6 @@ elif st.session_state.page == "User Management":
                     "Select orphan records to permanently delete",
                     options=[o['form_name'] for o in orphans]
                 )
-
                 if st.button("🗑️ Delete Selected Orphans", type="primary"):
                     deleted_count = 0
                     error_count = 0
@@ -2372,9 +1839,6 @@ elif st.session_state.page == "Update Forms":
             if form_to_delete:
                 # Get the submission count, which could be an integer or an error string.
                 submission_count = get_form_data_count(form_to_delete)
-
-                # --- START OF THE CRITICAL FIX ---
-
                 # First, check if the count is a valid integer.
                 if isinstance(submission_count, int):
                     
@@ -2410,15 +1874,11 @@ elif st.session_state.page == "Update Forms":
                             st.rerun()
                         else:
                             st.error(message)
-
-                # If submission_count is NOT an integer, it's an error message from the database function.
-                
                 else:
                     # This block now handles the "orphan record" case.
                     st.error(f"Data Consistency Error: {submission_count}")
                     st.warning(f"The metadata for the form '{form_to_delete}' exists, but its data table does not. This is an orphan record.")
                     st.info("You can clean this up by deleting the form metadata below.")
-
                     # Allow deletion even if the table is missing.
                     delete_confirm = st.checkbox(
                         f"I confirm I want to **permanently delete** the orphan metadata for '{form_to_delete}'.",
@@ -2426,9 +1886,6 @@ elif st.session_state.page == "Update Forms":
                     )
                     
                     if st.button("🗑️ Delete Orphan Record", type="primary", disabled=not delete_confirm):
-                        # We can still use delete_form, as it's designed to handle this.
-                        # It will find no children, delete permissions, and then fail to drop the table (which is fine),
-                        # but it WILL delete the metadata from the 'forms' table.
                         success, message = delete_form(form_to_delete)
                         
                         if success:
